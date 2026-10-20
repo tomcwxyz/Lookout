@@ -212,3 +212,30 @@ h1,h2,h3,p { margin-top:0; }
 .work-queue-row p.work-queue-pr-title { font-size:11px; color:#5e7867; margin-bottom:2px; }
 .work-queue-row p.work-queue-summary { font-size:12px; color:#244c3b; line-height:1.6; }
 .work-queue-row p.work-queue-next { font-size:11px; color:#357956; line-height:1.6; }
+
+.agent-connection { margin:0 0 24px; background:#fff; border:1px solid #dbe8df; padding:22px 27px; border-radius:15px; }
+.agent-connection>summary { cursor:pointer; font-size:15px; font-weight:800; }
+.agent-connection-count { color:#648672; margin-left:10px; font-size:11px; font-weight:500; }
+.agent-connection-form { display:flex; gap:12px; align-items:end; flex-wrap:wrap; margin:17px 0; }
+.agent-connection-form label { font-size:12px; display:grid; gap:7px; }
+.agent-connection-form input { border:1px solid #dce6de; border-radius:8px; padding:10px; min-width:240px; }
+.agent-connection button { border:0; border-radius:8px; padding:10px 12px; background:#285b48; color:#fff; font-size:11px; }
+.agent-connection button:disabled { opacity:.5; }
+.agent-token-reveal { border:1px solid #f2daa8; background:#fff9e9; border-radius:10px; padding:15px; display:flex; flex-wrap:wrap; gap:12px; align-items:center; }
+.agent-token-reveal strong { flex-basis:100%; font-size:12px; }
+.agent-token-reveal code { overflow-wrap:anywhere; font-size:11px; flex:1 1 350px; }
+.agent-status { font-size:12px; }
+.agent-token-list { display:grid; gap:8px; }
+.agent-token-row { display:flex; align-items:center; justify-content:space-between; padding:9px 0; gap:15px; border-bottom:1px solid #e8eee9; }
+.agent-token-row strong,.agent-token-row small { display:block; font-size:12px; }
+.agent-token-row small { font-size:10px; color:#829589; margin-top:5px; }
+.agent-timeline { display:grid; gap:12px; }
+.agent-timeline-entry { border:1px solid #e6eee7; padding:15px 18px; border-radius:10px; }
+.agent-timeline-top { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px; font-size:10px; color:#869c90; }
+.agent-timeline-entry h3 { font-size:14px; margin:10px 0 6px; }
+.agent-timeline-entry p { font-size:12px; line-height:1.6; margin:0; color:#607b69; }
+.agent-source { border-radius:12px; padding:5px 9px; font-size:10px; font-weight:800; }
+.agent-source-agent { background:#fff3dc; color:#98631c; }
+.agent-source-merge { background:#e7f1ff; color:#3a6093; }
+.agent-source-human { background:#e5f2e7; color:#2c7350; }
+.project-activity { margin-top:15px; }
