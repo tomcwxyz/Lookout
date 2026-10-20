@@ -12,10 +12,16 @@ export type WorkflowRun = {
   id: number; name: string; conclusion: string | null; status: string;
   url: string; createdAt: string; branch: string;
 };
+export type WorkIssue = { number: number; title: string; url: string; updatedAt: string; labels: string[] };
+export type RecentMerge = { number: number; title: string; url: string; mergedAt: string; branch: string };
+export type PlanningTask = { text: string; done: boolean; line: number };
+export type PlanningDocument = { path: string; url: string; tasks: PlanningTask[] };
+
 export type ProjectSnapshot = {
   provider: "github"; providerId: string; slug: string; name: string; url: string;
   description: string | null; defaultBranch: string; lastActivityAt: string | null;
   archived: boolean; branches: GitBranch[]; pullRequests: PullRequest[];
+  workIssues?: WorkIssue[]; recentMerges?: RecentMerge[]; planningDocuments?: PlanningDocument[];
   openIssues: number; latestWorkflow: WorkflowRun | null; observedAt: string;
 };
 export type AttentionFinding = {
@@ -81,3 +87,6 @@ export type {
   InfrastructureResource, InfrastructureFinding, InfrastructureKind,
   InfrastructureProvider, InfrastructureFindingKind
 } from "./infrastructure";
+
+export { deriveWorkHandover } from "./work";
+export type { WorkHandover, WorkItem, WorkStage } from "./work";

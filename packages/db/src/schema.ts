@@ -46,3 +46,13 @@ export const ideas = pgTable("ideas", {
   status: text("status").notNull().default("inbox"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
 });
+
+/** Explicit user confirmations override suggested GitHub interpretations. */
+export const workDecisions = pgTable("work_decisions", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  workKey: text("work_key").notNull(),
+  status: text("status").notNull(),
+  note: text("note"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
+}, table => [uniqueIndex("work_decision_project_key_uq").on(table.projectId, table.workKey)]);

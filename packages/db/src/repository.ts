@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { and, desc, eq } from "drizzle-orm";
 import type { ProjectAssessment } from "@lookout/core";
 import { getDatabase } from "./client";
-import { projects, attentionItems, syncRuns, ideas } from "./schema";
+import { projects, attentionItems, syncRuns, ideas, workDecisions } from "./schema";
 
 export function stableSnapshotHash(assessment: ProjectAssessment): string {
   const { observedAt: _observedAt, ...snapshot } = assessment.snapshot;
@@ -84,7 +84,7 @@ export async function finishSyncRun(id: number, status: "completed" | "failed", 
 
 export async function getPortfolio() {
   const db = getDatabase();
-  const [allProjects, activeItems, runs] = await Promise.all([
+  const [allProjects, activeItems, runs, decisions] = await Promise.all([
     db.select().from(projects).orderBy(desc(projects.observedAt)),
     db.select({ id: attentionItems.id, projectId: attentionItems.projectId, key: attentionItems.key,
       kind: attentionItems.kind, severity: attentionItems.severity, title: attentionItems.title,
@@ -92,19 +92,21 @@ export async function getPortfolio() {
       observedAt: attentionItems.observedAt, slug: projects.slug, name: projects.name })
       .from(attentionItems).innerJoin(projects, eq(attentionItems.projectId, projects.id))
       .where(eq(attentionItems.status, "open")).orderBy(desc(attentionItems.observedAt)),
-    db.select().from(syncRuns).orderBy(desc(syncRuns.startedAt)).limit(1)
+    db.select().from(syncRuns).orderBy(desc(syncRuns.startedAt)).limit(1),
+    db.select().from(workDecisions)
   ]);
-  return { projects: allProjects, attention: activeItems, latestRun: runs[0] ?? null };
+  return { projects: allProjects, attention: activeItems, latestRun: runs[0] ?? null, workDecisions: decisions };
 }
 
 export async function getProject(id: number) {
   const db = getDatabase();
-  const [matches, findings, projectIdeas] = await Promise.all([
+  const [matches, findings, projectIdeas, decisions] = await Promise.all([
     db.select().from(projects).where(eq(projects.id, id)).limit(1),
     db.select().from(attentionItems).where(and(eq(attentionItems.projectId, id), eq(attentionItems.status, "open"))),
-    db.select().from(ideas).where(eq(ideas.projectId, id)).orderBy(desc(ideas.createdAt))
+    db.select().from(ideas).where(eq(ideas.projectId, id)).orderBy(desc(ideas.createdAt)),
+    db.select().from(workDecisions).where(eq(workDecisions.projectId, id))
   ]);
-  return { project: matches[0] ?? null, findings, ideas: projectIdeas };
+  return { project: matches[0] ?? null, findings, ideas: projectIdeas, decisions };
 }
 
 export async function saveIdea(input: { projectId?: number; title: string; note?: string }) {
@@ -113,4 +115,26 @@ export async function saveIdea(input: { projectId?: number; title: string; note?
   return getDatabase().insert(ideas).values({
     projectId: input.projectId ?? null, title, note: input.note?.slice(0, 5000) ?? null
   }).returning();
+}
+
+export const acceptedWorkStatuses = [
+  "complete", "needs_tidy", "needs_testing", "needs_review",
+  "in_progress", "on_hold", "scoped_not_built"
+] as const;
+export type AcceptedWorkStatus = typeof acceptedWorkStatuses[number];
+
+/** User-authored decisions are never overwritten by observation sync. */
+export async function saveWorkDecision(
+  projectId: number, workKey: string, status: AcceptedWorkStatus | null, note: string
+) {
+  if (!Number.isSafeInteger(projectId) || projectId <= 0) throw new Error("Invalid project");
+  if (workKey.length < 1 || workKey.length > 300) throw new Error("Invalid work key");
+  const db = getDatabase();
+  if (status === null) {
+    await db.delete(workDecisions).where(and(eq(workDecisions.projectId, projectId), eq(workDecisions.workKey, workKey)));
+    return;
+  }
+  await db.insert(workDecisions).values({ projectId, workKey, status, note: note.slice(0, 500), updatedAt: new Date() })
+    .onConflictDoUpdate({ target: [workDecisions.projectId, workDecisions.workKey],
+      set: { status, note: note.slice(0, 500), updatedAt: new Date() } });
 }

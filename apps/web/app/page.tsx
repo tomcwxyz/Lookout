@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { ScanControls } from "./components/scan-controls";
+import { deriveWorkHandover } from "@lookout/core";
+import { workStageLabels, confirmedStageLabels, effectiveWorkStatus } from "./components/work-handover";
 import { databaseConfigured, getPortfolio, getInfrastructurePortfolio } from "@lookout/db";
 
 export const dynamic = "force-dynamic";
@@ -20,6 +22,25 @@ export default async function Home() {
   const infraAttention = infrastructure?.findings.length ?? 0;
   const allProjects = data?.projects ?? [];
   const items = data?.attention ?? [];
+  const decisions = data?.workDecisions ?? [];
+  const handovers = allProjects.map(project => ({
+    project, work: deriveWorkHandover(project.snapshot),
+    decisions: decisions.filter(d => d.projectId === project.id)
+  }));
+  const workQueue = handovers.map(entry => {
+    const options = entry.work.items.map(item => ({
+      signal: item, stage: effectiveWorkStatus(item, entry.decisions)
+    })).filter(item => !["complete", "marked_done"].includes(item.stage));
+    const rank = (stage: string) => [
+      "needs_testing", "needs_review", "needs_tidy", "in_progress",
+      "possibly_paused", "on_hold", "scoped_not_built", "planned", "integrated"
+    ].indexOf(stage);
+    options.sort((x, y) => rank(x.stage) - rank(y.stage));
+    return { ...entry, item: options[0] };
+  }).filter(entry => entry.item !== undefined).sort((a, b) => {
+    const priorities = ["needs_testing", "needs_review", "needs_tidy", "in_progress", "possibly_paused", "on_hold", "scoped_not_built", "planned", "integrated"];
+    return priorities.indexOf(a.item!.stage) - priorities.indexOf(b.item!.stage);
+  }).slice(0, 12);
   const projectCount = new Set(items.map(item => item.projectId)).size;
   const branches = allProjects.reduce((count, project) => count + project.snapshot.branches.length, 0);
   const prs = allProjects.reduce((count, project) => count + project.snapshot.pullRequests.length, 0);
@@ -35,7 +56,7 @@ export default async function Home() {
           <a href="#projects" className="nav-link"><span>⌁</span> Projects</a>
           <Link href="/infrastructure" className="nav-link"><span>♧</span> Infrastructure {infraAttention > 0 && <span className="nav-count">{infraAttention}</span>}</Link>
         </nav>
-        <div className="sidebar-bottom"><div className="pulse-dot" /> Observation mode <span className="muted">· Read-only</span></div>
+        <div className="sidebar-bottom"><div className="pulse-dot" /> Observation mode <span className="muted">· Sources read-only</span></div>
       </aside>
 
       <main className="content">
@@ -48,6 +69,21 @@ export default async function Home() {
         {(!databaseConfigured() || error) && <section className="notice"><strong>Connect your workspace</strong><p>{error ?? "Add DATABASE_URL and GITHUB_TOKEN to your .env file, apply the migration, then run the synchronisation worker. No sample data is shown as if it were real."}</p><code>npm run db:migrate &amp;&amp; npm run sync</code></section>}
 
         <ScanControls />
+
+        <section className="work-portfolio">
+          <div className="work-heading"><div><span className="eyebrow">WHERE DID I LEAVE THINGS?</span><h2>Work to pick up</h2></div>
+            <span className="count-pill">{workQueue.length} projects highlighted</span></div>
+          <p className="work-caution">A handover based on available PRs, issues and plans. Suggested statuses can be corrected and confirmed from each project page.</p>
+          {workQueue.length === 0 ? <p className="muted">No work signals yet. Scan GitHub to gather recent changes and planning files.</p> :
+            <div className="work-queue">{workQueue.map(({ project, item }) =>
+              <div className="work-queue-row" key={project.id}>
+                <div><Link href={"/projects/" + project.id} className="work-project-name">{project.name}</Link>
+                  <span className={"work-status-label stage-" + item!.stage}>{confirmedStageLabels[item!.stage] ?? workStageLabels[item!.stage as keyof typeof workStageLabels]}</span>
+                  <p>{item!.signal.title}</p></div>
+                <a href={item!.signal.evidenceUrl} target="_blank" rel="noopener noreferrer">Evidence ↗</a>
+              </div>
+            )}</div>}
+        </section>
 
         <div className="metrics">
           <div className="metric"><span>Tracked projects</span><strong>{allProjects.length}</strong><small>Repositories observed</small></div>
@@ -72,7 +108,7 @@ export default async function Home() {
               <div className="project-list">{allProjects.map(project => {
                 const pending = items.filter(item => item.projectId === project.id);
                 return <Link className="project-row" key={project.id} href={"/projects/" + project.id}>
-                  <div className="project-avatar">{project.name.slice(0, 2).toUpperCase()}</div><div className="project-body"><strong>{project.name}</strong><small>{project.slug}</small><span>{project.ruleSummary}</span></div><div className="project-side">{pending.length ? <span className="mini-alert">{pending.length} to review</span> : <span className="mini-clear">Observed</span>}<small>{dateLabel(project.observedAt)}</small></div>
+                  <div className="project-avatar">{project.name.slice(0, 2).toUpperCase()}</div><div className="project-body"><strong>{project.name}</strong><small>{project.slug}</small><span>{handovers.find(x => x.project.id === project.id)?.decisions.length ? 'Work status reviewed · ' : ''}{deriveWorkHandover(project.snapshot).nextStep}</span></div><div className="project-side">{pending.length ? <span className="mini-alert">{pending.length} to review</span> : <span className="mini-clear">Observed</span>}<small>{dateLabel(project.observedAt)}</small></div>
                 </Link>;
               })}</div>}
           </section>

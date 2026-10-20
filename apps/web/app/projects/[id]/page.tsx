@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { databaseConfigured, getProject, getLinkedResources } from "@lookout/db";
 import { IdeaForm } from "./idea-form";
+import { deriveWorkHandover } from "@lookout/core";
+import { WorkHandoverPanel } from "../../components/work-handover";
 
 export const dynamic = "force-dynamic";
 
@@ -9,15 +11,17 @@ export default async function ProjectDetail({ params }: { params: Promise<{ id: 
   const { id } = await params;
   const number = Number(id);
   if (!databaseConfigured() || !Number.isSafeInteger(number) || number <= 0) notFound();
-  const { project, findings, ideas } = await getProject(number);
+  const { project, findings, ideas, decisions } = await getProject(number);
   if (!project) notFound();
   const linkedResources = await getLinkedResources(number).catch(() => []);
   const snapshot = project.snapshot;
+  const work = deriveWorkHandover(snapshot);
   return (
     <main className="detail-layout">
       <Link href="/" className="back-link">← Portfolio overview</Link>
       <div className="detail-header"><div><span className="eyebrow">PROJECT / {snapshot.provider.toUpperCase()}</span><h1>{project.name}</h1><p>{project.description || snapshot.slug}</p></div><a className="external-link" href={project.url} target="_blank" rel="noopener noreferrer">Open repository ↗</a></div>
-      <section className="project-summary"><span className="eyebrow">CURRENT OBSERVATION</span><p>{project.ruleSummary}</p>{project.aiBrief && <div className="ai-brief"><span className="eyebrow">◈ AGENT BRIEF · AI-GENERATED</span><p>{project.aiBrief}</p></div>}</section>
+      <WorkHandoverPanel handover={work} decisions={decisions} projectId={project.id} />
+      <section className="project-summary"><span className="eyebrow">TECHNICAL OBSERVATION</span><p>{project.ruleSummary}</p>{project.aiBrief && <div className="ai-brief"><span className="eyebrow">◈ AGENT BRIEF · AI-GENERATED</span><p>{project.aiBrief}</p></div>}</section>
       <div className="detail-columns">
         <section className="panel detail-panel">
           <div className="panel-heading"><h2>Branches ({snapshot.branches.length})</h2></div>
