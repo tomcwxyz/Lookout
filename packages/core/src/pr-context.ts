@@ -11,10 +11,12 @@ function plain(line: string): string {
 }
 function heading(section: string): "changes" | "testing" | "remaining" | "risks" | "summary" {
   if (/\b(tests?|testing|qa|verify|verification|checks|validation)\b/i.test(section)) return "testing";
-  if (/\b(follow.?up|remaining|next steps?|to.?do|todo|outstanding|pending|before merge|known limitations?|not done)\b/i.test(section)) return "remaining";
+  if (/\b(follow.?up|remaining|next steps?|to.?do|todo|outstanding|pending|before merge|merge gate|prerequisite|pre.?requisite|release gate|known limitations?|not done)\b/i.test(section)) return "remaining";
   if (/\b(risks?|caveat|blocker|issue|concern)\b/i.test(section)) return "risks";
   if (/\b(what changed|changes|implemented|implementation|delivered|features?|work done|highlights)\b/i.test(section)) return "changes";
-  return "summary";
+  if (/\b(summary|overview|purpose|context|background|what this branch does|what this pr does)\b/i.test(section)) return "summary";
+  // Feature-specific subheadings in real PRs often describe delivered changes.
+  return "changes";
 }
 function append(items: string[], content: string, limit = 4) {
   if (content && items.length < limit && !items.includes(content)) items.push(content);
