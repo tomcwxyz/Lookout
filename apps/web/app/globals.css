@@ -180,3 +180,15 @@ h1,h2,h3,p { margin-top:0; }
 .work-queue-row p { margin:7px 0 0; color:#637d6e; font-size:12px; }
 .work-queue-row > a { flex-shrink:0; color:#2b8566; font-size:11px; font-weight:700; }
 @media(max-width:720px) { .work-items { grid-template-columns:1fr; }.work-handover,.work-portfolio { padding:19px 17px; }.work-heading { align-items:flex-start; } }
+
+.stage-needs_tidy { background:#d99d52; }
+.stage-on_hold { background:#8f8d94; }
+.stage-scoped_not_built { background:#96a5bc; }
+.stage-complete { background:#2f956c; }
+.work-confirmed-note { display:block; font-size:11px; color:#31624d; padding:8px 10px; background:#edf5ed; border-radius:7px; }
+.work-decision { border-top:1px solid #e9efea; padding-top:12px; margin-top:8px; display:grid; gap:8px; }
+.work-decision label { font-size:10px; color:#71897d; font-weight:750; display:grid; gap:5px; }
+.work-decision select,.work-decision input { width:100%; border:1px solid #dae4da; border-radius:7px; background:white; padding:9px; font-size:11px; color:#254435; outline-color:#388969; }
+.work-decision button { background:#245d4c; color:white; font-size:11px; font-weight:700; border:0; border-radius:7px; padding:9px 12px; justify-self:start; }
+.work-decision button:disabled { cursor:default; opacity:.4; }
+.work-decision small { color:#4b7f64; font-size:10px; line-height:1.5; }
