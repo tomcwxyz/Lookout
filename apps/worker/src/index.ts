@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { observationProviders, runObservation } from "./run";
+import { closeDatabase } from "@lookout/db";
 
 const mode = process.argv[2] ?? "once";
 if (mode !== "once" && mode !== "watch") {
@@ -22,7 +23,7 @@ if (mode !== "once" && mode !== "watch") {
     }
   };
   if (mode === "once") {
-    await run();
+    try { await run(); } finally { await closeDatabase(); }
   } else {
     const minutes = Math.max(15, Number(process.env.LOOKOUT_POLL_MINUTES ?? 60));
     let stopping = false;

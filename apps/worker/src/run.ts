@@ -2,7 +2,7 @@ import { GitHubAdapter, NeonAdapter, VercelAdapter } from "@lookout/connectors";
 import { assessInfrastructure, assessProject, type InfrastructureProvider, type InfrastructureResource } from "@lookout/core";
 import { aiConfigured, buildBrief } from "@lookout/agents";
 import {
-  closeDatabase, createSyncRun, finishSyncRun, lookupHash,
+  withObservationLease, createSyncRun, finishSyncRun, lookupHash,
   saveAssessment, stableSnapshotHash, beginSourceSync, completeSourceSync,
   saveInfrastructureObservation
 } from "@lookout/db";
@@ -77,7 +77,7 @@ async function syncInfrastructure(
 /** Called by Vercel cron routes and the CLI. All provider calls are read-only. */
 export async function runObservation(provider: ObservationProvider): Promise<ObservationResult> {
   requireConfiguration(provider);
-  try {
+  return withObservationLease(provider, async () => {
     let count: number;
     switch (provider) {
       case "github":
@@ -104,7 +104,5 @@ export async function runObservation(provider: ObservationProvider): Promise<Obs
     }
     console.log("Lookout " + provider + ": observed " + count + " resources");
     return { provider, status: "completed", count };
-  } finally {
-    await closeDatabase();
-  }
+  });
 }
