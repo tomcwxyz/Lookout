@@ -43,7 +43,7 @@ describe("work handovers", () => {
     expect(d.items).toEqual([]);
     expect(d.coverage).toContain("not scanned");
   });
-  it("does not call every open PR human review; records next steps and evidence", () => {
+  it("surfaces explicit follow-up testing instead of generic review", () => {
     const d = deriveWorkHandover({ ...snapshot, pullRequests: [
       { number: 11, title: "Improve mapping", url: "https://github.com/org/repo/pull/11",
         branch: "feat/map", createdAt: now.toISOString(), updatedAt: now.toISOString(), draft: false,
@@ -53,7 +53,7 @@ describe("work handovers", () => {
         branch: "bot", createdAt: now.toISOString(), updatedAt: now.toISOString(),
         draft: false, isBot: true }
     ] }, now);
-    expect(d.items[0]?.stage).toBe("awaiting_decision");
+    expect(d.items[0]?.stage).toBe("needs_testing");
     expect(d.items[0]?.summary).toContain("maps usable on mobile");
     expect(d.items[0]?.nextAction).toBe("Test drawing with two fingers");
     expect(d.items[1]?.stage).toBe("maintenance");

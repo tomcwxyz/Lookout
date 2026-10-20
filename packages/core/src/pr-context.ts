@@ -10,9 +10,9 @@ function plain(line: string): string {
     .replace(/\*\*|__/g, "").replace(/\s+/g, " ").trim().slice(0, 250);
 }
 function heading(section: string): "changes" | "testing" | "remaining" | "risks" | "summary" {
-  if (/\b(test|qa|verify|verification|checks|validation)\b/i.test(section)) return "testing";
+  if (/\b(tests?|testing|qa|verify|verification|checks|validation)\b/i.test(section)) return "testing";
   if (/\b(follow.?up|remaining|next steps?|to.?do|todo|outstanding|pending|before merge|known limitations?|not done)\b/i.test(section)) return "remaining";
-  if (/\b(risk|caveat|blocker|issue|concern)\b/i.test(section)) return "risks";
+  if (/\b(risks?|caveat|blocker|issue|concern)\b/i.test(section)) return "risks";
   if (/\b(what changed|changes|implemented|implementation|delivered|features?|work done|highlights)\b/i.test(section)) return "changes";
   return "summary";
 }
