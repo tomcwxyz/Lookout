@@ -9,6 +9,7 @@
 - [x] AI brief generator (requires model and credential)
 - [x] Attention inbox and per-project pages
 - [x] Quick idea capture
+- [x] Local MCP server (read-only context; opt-in idea capture)
 - [x] Standalone polling worker
 - [x] CI tests, typecheck and build workflow (verification pending)
 - [ ] Live provider credentials, migrations and first observed sync

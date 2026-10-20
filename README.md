@@ -4,6 +4,8 @@
 
 Lookout is an open-source, agent-led project observer. It gathers evidence about software projects, highlights unfinished work and provides short, grounded handovers so you can pick up where you left off.
 
+The first alpha includes a **local stdio MCP server** (npm run mcp, see docs/MCP.md). It supports read-only project context and optionally idea capture.
+
 The first alpha supports **GitHub discovery**, ageing branch and PR checks, latest workflow failure detection, an attention inbox, project drill-down, quick idea capture and optional AI-generated briefs. **Neon and Vercel observation are planned connectors, not yet live.**
 
 ## Architecture

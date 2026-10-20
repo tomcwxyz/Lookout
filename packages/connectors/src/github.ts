@@ -70,11 +70,10 @@ export class GitHubAdapter implements SourceAdapter<ProjectSnapshot> {
   private async listRepos(): Promise<Repo[]> {
     const repos: Repo[] = [];
     for (let page = 1; repos.length < this.maxRepos; page++) {
-      const path = this.owner
-        ? "/users/" + encodeURIComponent(this.owner) + "/repos?type=owner&sort=pushed&per_page=100&page=" + page
-        : "/user/repos?affiliation=owner,collaborator,organization_member&sort=pushed&per_page=100&page=" + page;
+      const path = "/user/repos?affiliation=owner,collaborator,organization_member&sort=pushed&per_page=100&page=" + page;
       const batch = await this.api<Repo[]>(path);
       for (const repo of batch) {
+        if (this.owner && repo.full_name.split("/")[0]?.toLowerCase() !== this.owner.toLowerCase()) continue;
         if (!repo.archived && (this.includeForks || !repo.fork)) repos.push(repo);
         if (repos.length === this.maxRepos) break;
       }

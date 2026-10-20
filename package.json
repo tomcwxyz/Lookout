@@ -11,6 +11,7 @@
     "test": "vitest run",
     "sync": "tsx apps/worker/src/index.ts once",
     "worker": "tsx apps/worker/src/index.ts watch",
+    "mcp": "tsx apps/mcp/src/index.ts",
     "db:migrate": "tsx packages/db/src/migrate.ts"
   },
   "devDependencies": {
