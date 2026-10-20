@@ -11,7 +11,7 @@ const now = new Date("2026-10-20T12:00:00Z");
 describe("work handovers", () => {
   it("distinguishes open review, draft and paused work", () => {
     const d = deriveWorkHandover({ ...snapshot, pullRequests: [
-      { number: 1, title: "Needs review", url: "https://github.com/org/repo/pull/1", branch: "feat", createdAt: now.toISOString(), updatedAt: now.toISOString(), draft: false },
+      { number: 1, title: "Needs review", url: "https://github.com/org/repo/pull/1", branch: "feat", createdAt: now.toISOString(), updatedAt: now.toISOString(), draft: false, requestedReviewers: 1 },
       { number: 2, title: "Draft feature", url: "https://github.com/org/repo/pull/2", branch: "draft", createdAt: now.toISOString(), updatedAt: now.toISOString(), draft: true },
       { number: 3, title: "Old feature", url: "https://github.com/org/repo/pull/3", branch: "old", createdAt: "2026-08-01T00:00:00Z", updatedAt: "2026-08-01T00:00:00Z", draft: false }
     ]}, now);
@@ -43,4 +43,34 @@ describe("work handovers", () => {
     expect(d.items).toEqual([]);
     expect(d.coverage).toContain("not scanned");
   });
+  it("does not call every open PR human review; records next steps and evidence", () => {
+    const d = deriveWorkHandover({ ...snapshot, pullRequests: [
+      { number: 11, title: "Improve mapping", url: "https://github.com/org/repo/pull/11",
+        branch: "feat/map", createdAt: now.toISOString(), updatedAt: now.toISOString(), draft: false,
+        reviewStatus: "none", checks: "unknown", requestedReviewers: 0,
+        body: "## Summary\nMake maps usable on mobile.\n## Delivered\n- Better zoom controls\n## Follow-up\n- Test drawing with two fingers" },
+      { number: 12, title: "Dependency bump", url: "https://github.com/org/repo/pull/12",
+        branch: "bot", createdAt: now.toISOString(), updatedAt: now.toISOString(),
+        draft: false, isBot: true }
+    ] }, now);
+    expect(d.items[0]?.stage).toBe("awaiting_decision");
+    expect(d.items[0]?.summary).toContain("maps usable on mobile");
+    expect(d.items[0]?.nextAction).toBe("Test drawing with two fingers");
+    expect(d.items[1]?.stage).toBe("maintenance");
+  });
+  it("prioritises changes requested, failing checks and explicit verification", () => {
+    const make = (number: number, patch: Record<string, unknown>) => ({
+      number, title: "Change", url: "https://github.com/org/repo/pull/" + number,
+      branch: "feat", createdAt: now.toISOString(), updatedAt: now.toISOString(),
+      draft: false, ...patch
+    });
+    const d = deriveWorkHandover({ ...snapshot, pullRequests: [
+      make(1, { reviewStatus: "changes_requested" }),
+      make(2, { checks: "failure" }),
+      make(3, { body: "## Testing\n- [ ] Verify on Windows" }),
+      make(4, { reviewStatus: "approved", checks: "success" })
+    ] }, now);
+    expect(d.items.map(i => i.stage)).toEqual(["checks_failing", "changes_requested", "needs_testing", "review_approved"]);
+  });
+
 });
