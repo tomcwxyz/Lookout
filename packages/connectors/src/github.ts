@@ -25,7 +25,10 @@ type GHPr = {
   number: number; title: string; html_url: string;
   head: { ref: string }; created_at: string; updated_at: string; draft: boolean
 };
-type GHIssue = { number: number; pull_request?: object };
+type GHIssue = { number: number; pull_request?: object; title?: string; html_url?: string; updated_at?: string; labels?: Array<{ name: string }> };
+type GHClosedPR = GHPr & { merged_at?: string | null };
+type GHDirectoryItem = { name: string; path: string; type: string; size?: number };
+type GHContent = { content?: string; encoding?: string };
 type GHWorkflow = { workflow_runs: Array<{
   id: number; name: string; conclusion: string | null; status: string;
   html_url: string; created_at: string; head_branch: string
@@ -89,13 +92,50 @@ export class GitHubAdapter implements SourceAdapter<ProjectSnapshot> {
     return snapshots;
   }
 
+
+  /** Read only two reasonably sized Markdown plans. A checkbox is not a verified task state. */
+  private async readPlans(root: string, repoUrl: string, defaultBranch: string) {
+    const list = async (path: string): Promise<GHDirectoryItem[]> => {
+      try {
+        const files = await this.api<GHDirectoryItem[]>(root + "/contents/" + path);
+        return Array.isArray(files) ? files : [];
+      } catch { return []; }
+    };
+    const [top, docs] = await Promise.all([list(""), list("docs")]);
+    const candidates = [...top, ...docs].filter(item =>
+      item.type === "file" &&
+      /^(roadmap|plan|status|todo|backlog)([-_.].*)?\.md$/i.test(item.name) &&
+      (item.size ?? 0) < 64000
+    ).sort((a, b) => {
+      const score = (s: string) => /roadmap/i.test(s) ? 0 : /status/i.test(s) ? 1 : /plan/i.test(s) ? 2 : 3;
+      return score(a.name) - score(b.name) || a.path.localeCompare(b.path);
+    }).slice(0, 2);
+    const found: Array<{ path: string; url: string; tasks: Array<{ text: string; done: boolean; line: number }> }> = [];
+    for (const item of candidates) {
+      try {
+        const path = item.path.split("/").map(encodeURIComponent).join("/");
+        const file = await this.api<GHContent>(root + "/contents/" + path);
+        if (file.encoding !== "base64" || !file.content) continue;
+        const content = Buffer.from(file.content.replace(/\s/g, ""), "base64").toString("utf8");
+        const tasks = content.split(/\r?\n/).flatMap((line, index) => {
+          const match = line.match(/^\s*[-*] \[([ xX])\]\s+(.{3,220})$/);
+          return match ? [{ text: match[2]!.trim(), done: match[1]!.toLowerCase() === "x", line: index + 1 }] : [];
+        }).slice(0, 20);
+        found.push({ path: item.path, url: repoUrl + "/blob/" + encodeURIComponent(defaultBranch) + "/" + path, tasks });
+      } catch { /* Missing document should not fail observation of branches or PRs. */ }
+    }
+    return found;
+  }
+
   async inspect(repo: Repo): Promise<ProjectSnapshot> {
     const root = "/repos/" + repo.full_name.split("/").map(encodeURIComponent).join("/");
-    const [branches, prs, issues, workflows] = await Promise.all([
+    const [branches, prs, issues, workflows, closedPrs, plans] = await Promise.all([
       this.api<GHBranch[]>(root + "/branches?per_page=100"),
       this.api<GHPr[]>(root + "/pulls?state=open&per_page=100"),
       this.api<GHIssue[]>(root + "/issues?state=open&per_page=100"),
-      this.api<GHWorkflow>(root + "/actions/runs?per_page=1").catch(() => ({ workflow_runs: [] }))
+      this.api<GHWorkflow>(root + "/actions/runs?per_page=1").catch(() => ({ workflow_runs: [] })),
+      this.api<GHClosedPR[]>(root + "/pulls?state=closed&sort=updated&direction=desc&per_page=15").catch(() => []),
+      this.readPlans(root, repo.html_url, repo.default_branch)
     ]);
     const gitBranches: GitBranch[] = [];
     for (const branch of branches.slice(0, this.maxBranches)) {
@@ -129,6 +169,17 @@ export class GitHubAdapter implements SourceAdapter<ProjectSnapshot> {
       defaultBranch: repo.default_branch, lastActivityAt: repo.pushed_at,
       archived: repo.archived, branches: gitBranches,
       pullRequests, openIssues: issues.filter(issue => !issue.pull_request).length,
+      workIssues: issues.filter(issue => !issue.pull_request && issue.title && issue.html_url)
+        .slice(0, 30).map(issue => ({
+          number: issue.number, title: issue.title!, url: issue.html_url!,
+          updatedAt: issue.updated_at ?? new Date(0).toISOString(),
+          labels: (issue.labels ?? []).map(label => label.name)
+        })),
+      recentMerges: closedPrs.filter(pr => pr.merged_at).slice(0, 6).map(pr => ({
+        number: pr.number, title: pr.title, url: pr.html_url, branch: pr.head.ref,
+        mergedAt: pr.merged_at!
+      })),
+      planningDocuments: plans,
       latestWorkflow, observedAt: new Date().toISOString()
     };
   }
