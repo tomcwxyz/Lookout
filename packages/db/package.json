@@ -1,0 +1,13 @@
+{
+  "name": "@lookout/db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": {
+    "@lookout/core": "*",
+    "drizzle-orm": "^0.44.0",
+    "dotenv": "^16.5.0",
+    "postgres": "^3.4.0"
+  }
+}
