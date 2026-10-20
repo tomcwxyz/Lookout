@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS agent_checkpoints (
   agent text NOT NULL,
   title text NOT NULL,
   payload jsonb NOT NULL,
+  payload_hash text NOT NULL,
   status text NOT NULL DEFAULT 'proposed' CHECK (status = 'proposed'),
   recorded_at timestamptz NOT NULL DEFAULT now(),
   UNIQUE (project_id, event_id)

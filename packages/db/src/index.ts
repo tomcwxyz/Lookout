@@ -8,3 +8,8 @@ export { withObservationLease, ObservationAlreadyRunningError } from "./observat
 
 export { saveWorkDecision, acceptedWorkStatuses } from "./repository";
 export type { AcceptedWorkStatus } from "./repository";
+
+export {
+  createAgentToken,listAgentTokens,revokeAgentToken,authoriseAgentToken,
+  submitAgentCheckpoint,listAgentCheckpoints,getAgentHandover,CheckpointConflictError
+} from "./agent-repository";
