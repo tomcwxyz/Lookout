@@ -30,15 +30,15 @@ export default async function Home() {
   const workQueue = handovers.map(entry => {
     const options = entry.work.items.map(item => ({
       signal: item, stage: effectiveWorkStatus(item, entry.decisions)
-    })).filter(item => !["complete", "marked_done"].includes(item.stage));
+    })).filter(item => !["complete", "marked_done", "maintenance"].includes(item.stage));
     const rank = (stage: string) => [
-      "needs_testing", "needs_review", "needs_tidy", "in_progress",
-      "possibly_paused", "on_hold", "scoped_not_built", "planned", "integrated"
+      "checks_failing", "changes_requested", "needs_testing", "needs_review", "needs_tidy", "review_approved", "in_progress",
+      "possibly_paused", "on_hold", "scoped_not_built", "awaiting_decision", "planned", "integrated", "maintenance"
     ].indexOf(stage);
     options.sort((x, y) => rank(x.stage) - rank(y.stage));
     return { ...entry, item: options[0] };
   }).filter(entry => entry.item !== undefined).sort((a, b) => {
-    const priorities = ["needs_testing", "needs_review", "needs_tidy", "in_progress", "possibly_paused", "on_hold", "scoped_not_built", "planned", "integrated"];
+    const priorities = ["checks_failing", "changes_requested", "needs_testing", "needs_review", "needs_tidy", "review_approved", "in_progress", "possibly_paused", "on_hold", "scoped_not_built", "awaiting_decision", "planned", "integrated", "maintenance"];
     return priorities.indexOf(a.item!.stage) - priorities.indexOf(b.item!.stage);
   }).slice(0, 12);
   const projectCount = new Set(items.map(item => item.projectId)).size;
@@ -79,7 +79,9 @@ export default async function Home() {
               <div className="work-queue-row" key={project.id}>
                 <div><Link href={"/projects/" + project.id} className="work-project-name">{project.name}</Link>
                   <span className={"work-status-label stage-" + item!.stage}>{confirmedStageLabels[item!.stage] ?? workStageLabels[item!.stage as keyof typeof workStageLabels]}</span>
-                  <p>{item!.signal.title}</p></div>
+                  <p className="work-queue-pr-title">{item!.signal.title}</p>
+                  {item!.signal.summary && <p className="work-queue-summary">{item!.signal.summary}</p>}
+                  {item!.signal.nextAction && <p className="work-queue-next"><strong>Next:</strong> {item!.signal.nextAction}</p>}</div>
                 <a href={item!.signal.evidenceUrl} target="_blank" rel="noopener noreferrer">Evidence ↗</a>
               </div>
             )}</div>}

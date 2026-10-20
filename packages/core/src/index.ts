@@ -7,13 +7,20 @@ export type GitBranch = {
 export type PullRequest = {
   number: number; title: string; url: string; branch: string;
   createdAt: string; updatedAt: string; draft: boolean;
+  body?: string | null; author?: string; isBot?: boolean; requestedReviewers?: number;
+  reviewStatus?: "approved" | "changes_requested" | "commented" | "none" | "unknown";
+  checks?: "success" | "failure" | "pending" | "unknown";
+  discussion?: Array<{ author: string; body: string; createdAt: string }>;
 };
 export type WorkflowRun = {
   id: number; name: string; conclusion: string | null; status: string;
   url: string; createdAt: string; branch: string;
 };
 export type WorkIssue = { number: number; title: string; url: string; updatedAt: string; labels: string[] };
-export type RecentMerge = { number: number; title: string; url: string; mergedAt: string; branch: string };
+export type RecentMerge = {
+  number: number; title: string; url: string; mergedAt: string; branch: string;
+  body?: string | null; isBot?: boolean;
+};
 export type PlanningTask = { text: string; done: boolean; line: number };
 export type PlanningDocument = { path: string; url: string; tasks: PlanningTask[] };
 
@@ -90,3 +97,6 @@ export type {
 
 export { deriveWorkHandover } from "./work";
 export type { WorkHandover, WorkItem, WorkStage } from "./work";
+
+export { parsePullRequestContext } from "./pr-context";
+export type { PullRequestContext } from "./pr-context";
