@@ -1,0 +1,22 @@
+{
+  "name": "lookout",
+  "private": true,
+  "type": "module",
+  "packageManager": "npm@10.9.2",
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev": "npm run dev -w @lookout/web",
+    "build": "npm run build -w @lookout/web",
+    "typecheck": "tsc --noEmit -p tsconfig.check.json",
+    "test": "vitest run",
+    "sync": "tsx apps/worker/src/index.ts once",
+    "worker": "tsx apps/worker/src/index.ts watch",
+    "db:migrate": "tsx packages/db/src/migrate.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.0"
+  }
+}

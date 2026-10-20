@@ -1,0 +1,13 @@
+{
+  "name": "@lookout/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@lookout/core": "*",
+    "@lookout/connectors": "*",
+    "@lookout/db": "*",
+    "@lookout/agents": "*",
+    "dotenv": "^16.5.0"
+  }
+}
