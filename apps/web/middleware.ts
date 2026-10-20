@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export function middleware(request: NextRequest) {
+  // Agent endpoints authorise per-project bearer tokens in the route handlers.
+  if (/^\/api\/agent\/(?:handover|checkpoints)\/?$/.test(request.nextUrl.pathname)) {
+    return NextResponse.next();
+  }
   // Cron route handlers perform their own strict CRON_SECRET Bearer check.
   if (/^\/api\/cron\/(?:github|neon|vercel)\/?$/.test(request.nextUrl.pathname)) {
     return NextResponse.next();
