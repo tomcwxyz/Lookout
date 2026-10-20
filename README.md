@@ -36,6 +36,12 @@ To enable AI briefs, set AI_GATEWAY_API_KEY and LOOKOUT_AI_MODEL to a currently 
 
 To enable periodic observation, run npm run worker separately (default every 60 minutes). The worker is independent of Vercel and suitable for a service container. For production, use a supervisor; do not depend on a web request to keep it running.
 
+## Infrastructure observers (Alpha 0.2 development)
+
+Set NEON_API_KEY and/or VERCEL_API_TOKEN to activate the corresponding read-only observer. Use NEON_ORG_ID and VERCEL_TEAM_ID to select the correct scope. Run npm run db:migrate again before syncing, then open /infrastructure. See docs/INFRASTRUCTURE.md.
+
+The new observers flag long-lived Neon branches for **review** and identify failed latest Vercel deployments. They do not calculate actual cost or verify whether application migrations have run.
+
 ## Configuration
 
 | Variable | Meaning |

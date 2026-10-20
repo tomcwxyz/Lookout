@@ -110,3 +110,16 @@ h1,h2,h3,p { margin-top:0; }
   .metrics { grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }.metric { min-height:110px; padding:14px; }.metric strong { font-size:30px; }.dashboard-grid { gap:14px; }.panel-heading { padding:19px; }.project-row,.attention-row { padding:16px; }
   .detail-layout { padding:24px 15px; }.detail-columns { grid-template-columns:1fr; }.detail-header { align-items:flex-start; flex-direction:column; }.footer { gap:20px; }
 }
+
+.resource-entry { display:flex; justify-content:space-between; gap:25px; border-bottom:1px solid #edf1ed; padding:22px 27px; }
+.resource-entry:last-child { border:0; }
+.resource-info { flex:1; min-width:0; }
+.resource-info h3 { font-size:15px; margin:9px 0 6px; overflow-wrap:anywhere; }
+.resource-info p { margin:5px 0; color:#788d80; font-size:12px; line-height:1.65; }
+.resource-info .infra-warning { background:#fff4e0; color:#836025; border-radius:8px; padding:12px; margin-top:12px; }
+.link-form { width:295px; flex-shrink:0; }
+.link-form label { display:block; color:#72877b; font-size:11px; font-weight:700; margin-bottom:8px; }
+.link-form>div { display:flex; gap:6px; }
+.link-form select { min-width:0; max-width:205px; flex:1; border:1px solid #d4e4da; border-radius:7px; padding:8px; color:#294b3b; background:white; font-size:11px; }
+.link-form button { padding:8px 12px; background:#245d4c; border:none; color:#fff; font-size:11px; border-radius:7px; }
+@media (max-width:800px) { .resource-entry { flex-direction:column; }.link-form { width:100%; }.link-form select { max-width:none; } }

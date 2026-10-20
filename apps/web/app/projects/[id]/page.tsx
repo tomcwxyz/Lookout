@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { databaseConfigured, getProject } from "@lookout/db";
+import { databaseConfigured, getProject, getLinkedResources } from "@lookout/db";
 import { IdeaForm } from "./idea-form";
 
 export const dynamic = "force-dynamic";
@@ -11,6 +11,7 @@ export default async function ProjectDetail({ params }: { params: Promise<{ id: 
   if (!databaseConfigured() || !Number.isSafeInteger(number) || number <= 0) notFound();
   const { project, findings, ideas } = await getProject(number);
   if (!project) notFound();
+  const linkedResources = await getLinkedResources(number).catch(() => []);
   const snapshot = project.snapshot;
   return (
     <main className="detail-layout">
@@ -32,6 +33,13 @@ export default async function ProjectDetail({ params }: { params: Promise<{ id: 
           <div className="panel-heading"><h2>Open PRs ({snapshot.pullRequests.length})</h2></div>
           {snapshot.pullRequests.map(pr => <a key={pr.number} className="detail-row" href={pr.url} target="_blank" rel="noopener noreferrer"><div><strong>#{pr.number} {pr.title}</strong><small>{pr.branch} · last updated {new Date(pr.updatedAt).toLocaleDateString("en-GB")}</small></div><span>↗</span></a>)}
           {snapshot.pullRequests.length === 0 && <p className="muted padded">No open pull requests.</p>}
+        </section>
+        <section className="panel detail-panel">
+          <div className="panel-heading"><h2>Linked infrastructure ({linkedResources.length})</h2><Link href="/infrastructure" className="back-link">Manage links →</Link></div>
+          {linkedResources.map(r => <a className="detail-row" href={r.url} target="_blank" rel="noopener noreferrer" key={r.id}>
+            <div><strong>{r.name}</strong><small>{r.provider} · {r.kind.replaceAll("_", " ")} · {r.snapshot.status ?? "status unknown"} · {r.linkMethod ?? "unlinked"}</small></div><span>↗</span>
+          </a>)}
+          {linkedResources.length === 0 && <p className="muted padded">No infrastructure linked to this repository yet.</p>}
         </section>
         <section className="panel detail-panel">
           <div className="panel-heading"><h2>Ideas and notes ({ideas.length})</h2></div>

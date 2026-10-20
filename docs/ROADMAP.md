@@ -17,9 +17,9 @@
 
 ## Alpha 0.2: infrastructure
 
-- [ ] Neon inventory: projects, branches, compute status, usage
-- [ ] Vercel deployments: production and previews
-- [ ] Identity map across code, PRs, DB branches and deployments
+- [x] Neon inventory: projects, branches, compute endpoint status (usage billing pending)
+- [x] Vercel latest deployments by environment: production and previews
+- [x] Verified GitHub/Vercel repository identity and explicit Neon links (PR/branch correlation pending)
 - [ ] Read-only migration inventory / applied-state verification
 - [ ] Configurable attention policies and snoozing
 

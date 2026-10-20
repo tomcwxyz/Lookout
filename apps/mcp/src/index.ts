@@ -2,7 +2,7 @@ import "dotenv/config";
 import { McpServer } from "@modelcontextprotocol/server";
 import { serveStdio } from "@modelcontextprotocol/server/stdio";
 import * as z from "zod/v4";
-import { databaseConfigured, getPortfolio, getProject, saveIdea } from "@lookout/db";
+import { databaseConfigured, getPortfolio, getProject, getInfrastructurePortfolio, getLinkedResources, saveIdea } from "@lookout/db";
 
 if (!databaseConfigured()) throw new Error("Lookout MCP requires DATABASE_URL");
 
@@ -46,6 +46,19 @@ function createServer() {
       attention: data.findings, ideas: data.ideas
     });
   });
+
+  server.registerTool("list_infrastructure", {
+    description: "List read-only observed Neon and Vercel resources, their explicit/verified project associations, evidence and attention items.",
+    inputSchema: z.object({})
+  }, async () => {
+    const data = await getInfrastructurePortfolio();
+    return result({ resources: data.resources, findings: data.findings, syncs: data.syncs });
+  });
+
+  server.registerTool("get_project_infrastructure", {
+    description: "List observed cloud resources associated with one Lookout project. A link is not evidence that a database migration has run.",
+    inputSchema: z.object({ projectId: z.number().int().positive() })
+  }, async ({ projectId }) => result(await getLinkedResources(projectId)));
 
   server.registerTool("capture_idea", {
     description: "Capture a low-risk idea or note without creating a GitHub issue. Requires explicit LOOKOUT_MCP_WRITE_ENABLED=true.",

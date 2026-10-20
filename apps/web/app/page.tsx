@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { databaseConfigured, getPortfolio } from "@lookout/db";
+import { databaseConfigured, getPortfolio, getInfrastructurePortfolio } from "@lookout/db";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +15,8 @@ export default async function Home() {
     try { data = await getPortfolio(); }
     catch { error = "Database unavailable or migration not yet applied. Check DATABASE_URL and run npm run db:migrate."; }
   }
+  const infrastructure = databaseConfigured() ? await getInfrastructurePortfolio().catch(() => null) : null;
+  const infraAttention = infrastructure?.findings.length ?? 0;
   const allProjects = data?.projects ?? [];
   const items = data?.attention ?? [];
   const projectCount = new Set(items.map(item => item.projectId)).size;
@@ -30,6 +32,7 @@ export default async function Home() {
           <Link href="/" className="nav-link active"><span>▦</span> Overview</Link>
           <a href="#attention" className="nav-link"><span>◇</span> Attention inbox <span className="nav-count">{items.length}</span></a>
           <a href="#projects" className="nav-link"><span>⌁</span> Projects</a>
+          <Link href="/infrastructure" className="nav-link"><span>♧</span> Infrastructure {infraAttention > 0 && <span className="nav-count">{infraAttention}</span>}</Link>
         </nav>
         <div className="sidebar-bottom"><div className="pulse-dot" /> Observation mode <span className="muted">· Read-only</span></div>
       </aside>
@@ -47,7 +50,7 @@ export default async function Home() {
           <div className="metric"><span>Tracked projects</span><strong>{allProjects.length}</strong><small>Repositories observed</small></div>
           <div className="metric"><span>Need attention</span><strong className="accent-amber">{projectCount}</strong><small>{items.length} open findings</small></div>
           <div className="metric"><span>Open pull requests</span><strong>{prs}</strong><small>Across tracked projects</small></div>
-          <div className="metric"><span>Git branches</span><strong>{branches}</strong><small>Including default branches</small></div>
+          <div className="metric"><span>Git branches</span><strong>{branches}</strong><small>Infrastructure alerts: {infraAttention}</small></div>
         </div>
 
         <div className="dashboard-grid">
