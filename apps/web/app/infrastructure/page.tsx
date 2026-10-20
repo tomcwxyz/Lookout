@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { databaseConfigured, getInfrastructurePortfolio } from "@lookout/db";
 import { LinkForm } from "./resource-link-form";
+import { ScanControls } from "../components/scan-controls";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,7 @@ export default async function InfrastructurePage() {
     {!data && <section className="notice"><strong>No infrastructure data available</strong>
       <p>Apply migration 0002, configure NEON_API_KEY or VERCEL_API_TOKEN, then run npm run sync.</p>
     </section>}
+    <ScanControls compact />
     <div className="metrics">
       <div className="metric"><span>Provider projects</span><strong>{projects.length}</strong><small>Neon and Vercel</small></div>
       <div className="metric"><span>Branches / deployments</span><strong>{children.length}</strong><small>Latest deployment per environment</small></div>
