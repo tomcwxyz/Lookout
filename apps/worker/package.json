@@ -9,5 +9,8 @@
     "@lookout/db": "*",
     "@lookout/agents": "*",
     "dotenv": "^16.5.0"
+  },
+  "exports": {
+    ".": "./src/run.ts"
   }
 }

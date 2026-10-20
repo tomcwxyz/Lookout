@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 
-/**
- * No unprotected production dashboard: a single-user Basic gate until proper
- * multi-user authentication is built. Run behind HTTPS only.
- */
 export function middleware(request: NextRequest) {
+  // Cron route handlers perform their own strict CRON_SECRET Bearer check.
+  if (/^\/api\/cron\/(?:github|neon|vercel)\/?$/.test(request.nextUrl.pathname)) {
+    return NextResponse.next();
+  }
   const secret = process.env.LOOKOUT_DASHBOARD_TOKEN;
   if (!secret && process.env.NODE_ENV !== "production") return NextResponse.next();
   if (!secret) return new NextResponse("Lookout requires LOOKOUT_DASHBOARD_TOKEN", { status: 503 });
@@ -14,7 +14,7 @@ export function middleware(request: NextRequest) {
   try {
     if (auth.startsWith("Basic ")) password = atob(auth.slice(6)).split(":").slice(1).join(":");
   } catch {
-    // Malformed credentials are simply unauthorised.
+    // Malformed credentials are unauthorised.
   }
   if (password === secret) return NextResponse.next();
   return new NextResponse("Authentication required", {
