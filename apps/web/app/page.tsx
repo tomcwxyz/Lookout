@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { ScanControls } from "./components/scan-controls";
+import { deriveWorkHandover } from "@lookout/core";
+import { workStageLabels } from "./components/work-handover";
 import { databaseConfigured, getPortfolio, getInfrastructurePortfolio } from "@lookout/db";
 
 export const dynamic = "force-dynamic";
@@ -20,6 +22,15 @@ export default async function Home() {
   const infraAttention = infrastructure?.findings.length ?? 0;
   const allProjects = data?.projects ?? [];
   const items = data?.attention ?? [];
+  const handovers = allProjects.map(project => ({ project, work: deriveWorkHandover(project.snapshot) }));
+  const workQueue = handovers
+    .map(entry => ({ ...entry, signal: entry.work.items.find(item =>
+      ["needs_testing", "needs_review", "in_progress", "possibly_paused", "planned"].includes(item.stage)) }))
+    .filter(entry => entry.signal !== undefined)
+    .sort((a, b) => {
+      const rank = (stage: string) => ["needs_testing", "needs_review", "in_progress", "possibly_paused", "planned"].indexOf(stage);
+      return rank(a.signal!.stage) - rank(b.signal!.stage);
+    }).slice(0, 12);
   const projectCount = new Set(items.map(item => item.projectId)).size;
   const branches = allProjects.reduce((count, project) => count + project.snapshot.branches.length, 0);
   const prs = allProjects.reduce((count, project) => count + project.snapshot.pullRequests.length, 0);
@@ -49,6 +60,21 @@ export default async function Home() {
 
         <ScanControls />
 
+        <section className="work-portfolio">
+          <div className="work-heading"><div><span className="eyebrow">WHERE DID I LEAVE THINGS?</span><h2>Work to pick up</h2></div>
+            <span className="count-pill">{workQueue.length} projects highlighted</span></div>
+          <p className="work-caution">A handover based on available PRs, issues and plans. Suggested statuses are not confirmed delivery decisions.</p>
+          {workQueue.length === 0 ? <p className="muted">No work signals yet. Scan GitHub to gather recent changes and planning files.</p> :
+            <div className="work-queue">{workQueue.map(({ project, signal }) =>
+              <div className="work-queue-row" key={project.id}>
+                <div><Link href={"/projects/" + project.id} className="work-project-name">{project.name}</Link>
+                  <span className={"work-status-label stage-" + signal!.stage}>{workStageLabels[signal!.stage]}</span>
+                  <p>{signal!.title}</p></div>
+                <a href={signal!.evidenceUrl} target="_blank" rel="noopener noreferrer">Evidence ↗</a>
+              </div>
+            )}</div>}
+        </section>
+
         <div className="metrics">
           <div className="metric"><span>Tracked projects</span><strong>{allProjects.length}</strong><small>Repositories observed</small></div>
           <div className="metric"><span>Need attention</span><strong className="accent-amber">{projectCount}</strong><small>{items.length} open findings</small></div>
@@ -72,7 +98,7 @@ export default async function Home() {
               <div className="project-list">{allProjects.map(project => {
                 const pending = items.filter(item => item.projectId === project.id);
                 return <Link className="project-row" key={project.id} href={"/projects/" + project.id}>
-                  <div className="project-avatar">{project.name.slice(0, 2).toUpperCase()}</div><div className="project-body"><strong>{project.name}</strong><small>{project.slug}</small><span>{project.ruleSummary}</span></div><div className="project-side">{pending.length ? <span className="mini-alert">{pending.length} to review</span> : <span className="mini-clear">Observed</span>}<small>{dateLabel(project.observedAt)}</small></div>
+                  <div className="project-avatar">{project.name.slice(0, 2).toUpperCase()}</div><div className="project-body"><strong>{project.name}</strong><small>{project.slug}</small><span>{deriveWorkHandover(project.snapshot).nextStep}</span></div><div className="project-side">{pending.length ? <span className="mini-alert">{pending.length} to review</span> : <span className="mini-clear">Observed</span>}<small>{dateLabel(project.observedAt)}</small></div>
                 </Link>;
               })}</div>}
           </section>
