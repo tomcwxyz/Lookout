@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { acceptedWorkStatuses, getProject, saveWorkDecision, type AcceptedWorkStatus } from "@lookout/db";
 import { deriveWorkHandover } from "@lookout/core";
-import { sameOriginPost } from "../../../lib/scan-request";
+import { sameOriginPost } from "../../../../lib/scan-request";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
