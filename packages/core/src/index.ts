@@ -100,3 +100,6 @@ export type { WorkHandover, WorkItem, WorkStage } from "./work";
 
 export { parsePullRequestContext } from "./pr-context";
 export type { PullRequestContext } from "./pr-context";
+
+export { parseCheckpoint, checkpointNextStep } from "./checkpoint";
+export type { CheckpointInput, CheckpointEntry } from "./checkpoint";

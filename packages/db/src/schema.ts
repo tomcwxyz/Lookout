@@ -56,3 +56,27 @@ export const workDecisions = pgTable("work_decisions", {
   note: text("note"),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
 }, table => [uniqueIndex("work_decision_project_key_uq").on(table.projectId, table.workKey)]);
+
+/** Scoped API credentials never contain a Lookout database secret. */
+export const agentAccessTokens = pgTable("agent_access_tokens", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  label: text("label").notNull(),
+  prefix: text("prefix").notNull(),
+  tokenHash: text("token_hash").notNull().unique(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  revokedAt: timestamp("revoked_at", { withTimezone: true })
+});
+
+export const agentCheckpoints = pgTable("agent_checkpoints", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  tokenId: integer("token_id").notNull().references(() => agentAccessTokens.id),
+  eventId: text("event_id").notNull(),
+  agent: text("agent").notNull(),
+  title: text("title").notNull(),
+  payload: jsonb("payload").$type<import("@lookout/core").CheckpointInput>().notNull(),
+  payloadHash: text("payload_hash").notNull(),
+  status: text("status").notNull().default("proposed"),
+  recordedAt: timestamp("recorded_at", { withTimezone: true }).defaultNow().notNull()
+}, t => [uniqueIndex("agent_checkpoint_event_uq").on(t.projectId,t.eventId)]);
