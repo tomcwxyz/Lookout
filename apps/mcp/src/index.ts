@@ -66,7 +66,9 @@ function createServer() {
 }
 
 // stdio transports must never write logs to stdout.
-void serveStdio(createServer).catch(error => {
+try {
+  serveStdio(createServer);
+} catch (error) {
   console.error("Lookout MCP failed:", error);
   process.exitCode = 1;
-});
+}
