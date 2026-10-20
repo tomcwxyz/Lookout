@@ -23,10 +23,15 @@ type Repo = {
 type GHBranch = { name: string; commit: { sha: string } };
 type GHPr = {
   number: number; title: string; html_url: string;
-  head: { ref: string }; created_at: string; updated_at: string; draft: boolean
+  head: { ref: string; sha?: string }; created_at: string; updated_at: string; draft: boolean;
+  body?: string | null; user?: { login: string; type?: string };
+  requested_reviewers?: Array<{ login: string }>;
 };
 type GHIssue = { number: number; pull_request?: object; title?: string; html_url?: string; updated_at?: string; labels?: Array<{ name: string }> };
 type GHClosedPR = GHPr & { merged_at?: string | null };
+type GHReview = { user?: { login: string }; state: string; submitted_at?: string };
+type GHComment = { user?: { login: string }; body?: string; created_at: string };
+type GHChecks = { check_runs: Array<{ status: string; conclusion: string | null }> };
 type GHDirectoryItem = { name: string; path: string; type: string; size?: number };
 type GHContent = { content?: string; encoding?: string };
 type GHWorkflow = { workflow_runs: Array<{
@@ -127,11 +132,43 @@ export class GitHubAdapter implements SourceAdapter<ProjectSnapshot> {
     return found;
   }
 
+  /** Bounded review, checks and discussion sampling; a 403 leaves status unknown. */
+  private async inspectPullContext(root: string, pr: GHPr) {
+    const base = root + "/pulls/" + pr.number;
+    const [reviews, checks, comments] = await Promise.all([
+      this.api<GHReview[]>(base + "/reviews?per_page=50").catch(() => null),
+      pr.head.sha ? this.api<GHChecks>(root + "/commits/" + encodeURIComponent(pr.head.sha) + "/check-runs?per_page=50").catch(() => null) : Promise.resolve(null),
+      this.api<GHComment[]>(root + "/issues/" + pr.number + "/comments?per_page=20").catch(() => null)
+    ]);
+    const latest = new Map<string, GHReview>();
+    for (const review of reviews ?? []) {
+      if (review.user?.login && review.state !== "DISMISSED") latest.set(review.user.login, review);
+    }
+    const states = [...latest.values()].map(item => item.state);
+    const reviewStatus = reviews === null ? "unknown"
+      : states.includes("CHANGES_REQUESTED") ? "changes_requested"
+      : states.includes("APPROVED") ? "approved"
+      : states.includes("COMMENTED") ? "commented" : "none";
+    const list = checks?.check_runs ?? [];
+    const checksStatus = !checks || !list.length ? "unknown"
+      : list.some(x => x.status !== "completed") ? "pending"
+      : list.some(x => x.conclusion !== "success" && x.conclusion !== "skipped" && x.conclusion !== "neutral") ? "failure" : "success";
+    return {
+      reviewStatus: reviewStatus as "approved" | "changes_requested" | "commented" | "none" | "unknown",
+      checks: checksStatus as "success" | "failure" | "pending" | "unknown",
+      discussion: (comments ?? []).slice(-3).filter(x => x.body).map(item => ({
+        author: item.user?.login ?? "Contributor",
+        body: (item.body ?? "").slice(0, 1000),
+        createdAt: item.created_at
+      }))
+    };
+  }
+
   async inspect(repo: Repo): Promise<ProjectSnapshot> {
     const root = "/repos/" + repo.full_name.split("/").map(encodeURIComponent).join("/");
     const [branches, prs, issues, workflows, closedPrs, plans] = await Promise.all([
       this.api<GHBranch[]>(root + "/branches?per_page=100"),
-      this.api<GHPr[]>(root + "/pulls?state=open&per_page=100"),
+      this.api<GHPr[]>(root + "/pulls?state=open&sort=updated&direction=desc&per_page=100"),
       this.api<GHIssue[]>(root + "/issues?state=open&per_page=100"),
       this.api<GHWorkflow>(root + "/actions/runs?per_page=1").catch(() => ({ workflow_runs: [] })),
       this.api<GHClosedPR[]>(root + "/pulls?state=closed&sort=updated&direction=desc&per_page=15").catch(() => []),
@@ -153,9 +190,14 @@ export class GitHubAdapter implements SourceAdapter<ProjectSnapshot> {
         url: repo.html_url + "/tree/" + branch.name.split("/").map(encodeURIComponent).join("/")
       });
     }
-    const pullRequests: PullRequest[] = prs.map(pr => ({
+    const detailed = await Promise.all(prs.slice(0, 5).map(pr => this.inspectPullContext(root, pr)));
+    const pullRequests: PullRequest[] = prs.map((pr, index) => ({
       number: pr.number, title: pr.title, url: pr.html_url, branch: pr.head.ref,
-      createdAt: pr.created_at, updatedAt: pr.updated_at, draft: pr.draft
+      createdAt: pr.created_at, updatedAt: pr.updated_at, draft: pr.draft,
+      body: index < 12 ? pr.body?.slice(0, 12000) ?? null : null,
+      author: pr.user?.login, isBot: pr.user?.type === "Bot" || /[bot]$/i.test(pr.user?.login ?? ""),
+      requestedReviewers: pr.requested_reviewers?.length,
+      ...(detailed[index] ?? {})
     }));
     const latest = workflows.workflow_runs[0];
     const latestWorkflow: WorkflowRun | null = latest ? {
@@ -177,7 +219,8 @@ export class GitHubAdapter implements SourceAdapter<ProjectSnapshot> {
         })),
       recentMerges: closedPrs.filter(pr => pr.merged_at).slice(0, 6).map(pr => ({
         number: pr.number, title: pr.title, url: pr.html_url, branch: pr.head.ref,
-        mergedAt: pr.merged_at!
+        mergedAt: pr.merged_at!, body: pr.body?.slice(0, 10000) ?? null,
+        isBot: pr.user?.type === "Bot" || /[bot]$/i.test(pr.user?.login ?? "")
       })),
       planningDocuments: plans,
       latestWorkflow, observedAt: new Date().toISOString()
