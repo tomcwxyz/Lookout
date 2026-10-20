@@ -26,3 +26,9 @@ Verification:
 Local manual bootstrap: `npm run sync` with database and provider tokens in a local, uncommitted `.env`.
 
 Limitations: The first GitHub sweep scans the 25 most recently pushed repositories by default; `LOOKOUT_MAX_REPOS` can change this. A sync may take time when there are many repos/branches, and missing projects from a capped scan are not treated as deleted. Cron runs are not retroactively triggered when deploying; the first real observation occurs at the next scheduled invocation or a local manual sync.
+
+## User-initiated observations
+
+The dashboard and infrastructure view include **Scan all** and individual provider buttons. These send authenticated same-origin POST requests to /api/scan/github, /api/scan/neon, and /api/scan/vercel. Dashboard Basic Auth remains required; provider API credentials never reach the browser. Exact Origin checking protects against CSRF. Each result reports the resource count and refreshes the dashboard.
+
+Manual and scheduled scans share the same per-provider atomic database lease (migration 0003). An overlapping scan receives HTTP 409. Leases expire after 10 minutes if a serverless process is interrupted. Serverless functions request up to 300 seconds, subject to Vercel plan limits. The scan endpoint requires a live connection until completion and can time out on large portfolios. Use scheduled syncs for ongoing monitoring.

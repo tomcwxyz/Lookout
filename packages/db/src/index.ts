@@ -4,3 +4,4 @@ export {
   saveInfrastructureObservation, beginSourceSync, completeSourceSync,
   getInfrastructurePortfolio, getLinkedResources, setInfrastructureProjectLink
 } from "./infrastructure-repository";
+export { withObservationLease, ObservationAlreadyRunningError } from "./observation-lock";

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ScanControls } from "./components/scan-controls";
 import { databaseConfigured, getPortfolio, getInfrastructurePortfolio } from "@lookout/db";
 
 export const dynamic = "force-dynamic";
@@ -45,6 +46,8 @@ export default async function Home() {
         </header>
 
         {(!databaseConfigured() || error) && <section className="notice"><strong>Connect your workspace</strong><p>{error ?? "Add DATABASE_URL and GITHUB_TOKEN to your .env file, apply the migration, then run the synchronisation worker. No sample data is shown as if it were real."}</p><code>npm run db:migrate &amp;&amp; npm run sync</code></section>}
+
+        <ScanControls />
 
         <div className="metrics">
           <div className="metric"><span>Tracked projects</span><strong>{allProjects.length}</strong><small>Repositories observed</small></div>
