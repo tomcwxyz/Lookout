@@ -26,7 +26,7 @@ export default async function ProjectDetail({ params }: { params: Promise<{ id: 
       <div className="detail-header"><div><span className="eyebrow">PROJECT / {snapshot.provider.toUpperCase()}</span><h1>{project.name}</h1><p>{project.description || snapshot.slug}</p></div><a className="external-link" href={project.url} target="_blank" rel="noopener noreferrer">Open repository ↗</a></div>
       <WorkHandoverPanel handover={work} decisions={decisions} projectId={project.id} />
       <ProjectActivity checkpoints={checkpoints} merges={snapshot.recentMerges ?? []} decisions={decisions} />
-      <AgentConnections projectId={project.id} initialTokens={tokens} />
+      <AgentConnections projectId={project.id} initialTokens={tokens.map(token => ({...token,createdAt:token.createdAt.toISOString(),revokedAt:token.revokedAt?.toISOString() ?? null}))} />
       <section className="project-summary"><span className="eyebrow">TECHNICAL OBSERVATION</span><p>{project.ruleSummary}</p>{project.aiBrief && <div className="ai-brief"><span className="eyebrow">◈ AGENT BRIEF · AI-GENERATED</span><p>{project.aiBrief}</p></div>}</section>
       <div className="detail-columns">
         <section className="panel detail-panel">
