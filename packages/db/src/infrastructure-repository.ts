@@ -23,13 +23,20 @@ export async function saveInfrastructureObservation(provider: InfrastructureProv
       if (old?.linkMethod === "manual" || old?.linkMethod === "manual_excluded") {
         projectId = old.projectId;
         linkMethod = old.linkMethod;
-      } else if (resource.gitRepository && exactRepos.has(resource.gitRepository.toLowerCase())) {
-        projectId = exactRepos.get(resource.gitRepository.toLowerCase())!;
-        linkMethod = "verified_git";
-      } else if (resource.parentKey) {
-        const [parent] = await tx.select({ projectId: infrastructureResources.projectId })
-          .from(infrastructureResources).where(eq(infrastructureResources.key, resource.parentKey)).limit(1);
-        if (parent?.projectId) { projectId = parent.projectId; linkMethod = "inherited"; }
+      } else {
+        const [parent] = resource.parentKey
+          ? await tx.select({ projectId: infrastructureResources.projectId, linkMethod: infrastructureResources.linkMethod })
+              .from(infrastructureResources).where(eq(infrastructureResources.key, resource.parentKey)).limit(1)
+          : [];
+        if (parent?.linkMethod === "manual_excluded" || parent?.linkMethod === "inherited_excluded") {
+          linkMethod = "inherited_excluded";
+        } else if (parent?.projectId) {
+          projectId = parent.projectId;
+          linkMethod = "inherited";
+        } else if (resource.gitRepository && exactRepos.has(resource.gitRepository.toLowerCase())) {
+          projectId = exactRepos.get(resource.gitRepository.toLowerCase())!;
+          linkMethod = "verified_git";
+        }
       }
       const [row] = await tx.insert(infrastructureResources).values({
         key: resource.key, provider: resource.provider, kind: resource.kind,
@@ -103,5 +110,13 @@ export async function setInfrastructureProjectLink(key: string, projectId: numbe
       projectId, linkMethod: projectId === null ? "manual_excluded" : "manual", updatedAt: new Date()
     }).where(eq(infrastructureResources.key, key)).returning({ id: infrastructureResources.id });
     if (!resource) throw new Error("Resource not found");
+    const children = await tx.select({ id: infrastructureResources.id, method: infrastructureResources.linkMethod })
+      .from(infrastructureResources).where(eq(infrastructureResources.parentKey, key));
+    for (const child of children) {
+      if (child.method === "manual" || child.method === "manual_excluded") continue;
+      await tx.update(infrastructureResources).set({
+        projectId, linkMethod: projectId === null ? "inherited_excluded" : "inherited", updatedAt: new Date()
+      }).where(eq(infrastructureResources.id, child.id));
+    }
   });
 }

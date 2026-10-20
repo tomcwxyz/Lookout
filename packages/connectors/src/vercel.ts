@@ -10,7 +10,7 @@ type VercelProject = {
   link?: { type?: string; repo?: string; repoId?: number; org?: string; repoName?: string };
 };
 type VercelDeployment = {
-  uid: string; name: string; url?: string | null; created?: number;
+  uid?: string; id?: string; name: string; url?: string | null; inspectorUrl?: string; created?: number;
   readyState?: string; state?: string; target?: string | null;
   meta?: { githubCommitSha?: string; githubCommitRef?: string; githubRepo?: string; githubOrg?: string; githubRepoName?: string };
 };
@@ -58,16 +58,20 @@ export class VercelAdapter implements SourceAdapter<InfrastructureResource> {
       const gitRepository = git?.type === "github"
         ? normaliseGitRepo(git.repo ?? (git.org && git.repoName ? git.org + "/" + git.repoName : null))
         : null;
-      const projectUrl = "https://vercel.com/dashboard/project/" + encodeURIComponent(project.name);
+      const projectUrl = "https://vercel.com/dashboard";
+      const response = await this.client.get<DeploymentPage>("/v6/deployments", {
+        teamId: this.options.teamId, projectId: project.id, limit: 20
+      });
+      const latestGit = response.deployments.find(d => d.meta?.githubOrg && (d.meta?.githubRepo || d.meta?.githubRepoName))?.meta;
+      const providerGitRepo = latestGit?.githubOrg && (latestGit.githubRepo || latestGit.githubRepoName)
+        ? normaliseGitRepo(latestGit.githubOrg + "/" + (latestGit.githubRepo ?? latestGit.githubRepoName)) : null;
+      const linkedRepo = gitRepository ?? providerGitRepo;
       output.push({
         key: projectKey, provider: "vercel", kind: "vercel_project", name: project.name,
-        url: projectUrl, parentKey: null, gitRepository, isDefault: false,
+        url: projectUrl, parentKey: null, gitRepository: linkedRepo, isDefault: false,
         createdAt: dateFromMs(project.createdAt), updatedAt: dateFromMs(project.updatedAt),
         status: null, endpointCount: null,
         details: { projectId: project.id, gitProvider: git?.type ?? "unknown" }, observedAt
-      });
-      const response = await this.client.get<DeploymentPage>("/v6/deployments", {
-        teamId: this.options.teamId, projectId: project.id, limit: 20
       });
       // Only retain the newest deployment per target; old failed builds must not be
       // represented as the current state after a succeeding deployment.
@@ -77,16 +81,18 @@ export class VercelAdapter implements SourceAdapter<InfrastructureResource> {
         if (!latest.has(target)) latest.set(target, deployment);
       }
       for (const [target, deployment] of latest) {
+        const deploymentId = deployment.uid ?? deployment.id;
+        if (!deploymentId) continue;
         output.push({
-          key: "vercel:deployment:" + deployment.uid,
+          key: "vercel:deployment:" + project.id + ":" + target,
           provider: "vercel", kind: "vercel_deployment", name: deployment.name,
-          url: deployment.url ? "https://" + deployment.url : projectUrl,
-          parentKey: projectKey, gitRepository,
+          url: deployment.inspectorUrl?.startsWith("https://vercel.com/") ? deployment.inspectorUrl : (deployment.url ? "https://" + deployment.url : projectUrl),
+          parentKey: projectKey, gitRepository: linkedRepo,
           isDefault: target === "production",
           createdAt: dateFromMs(deployment.created), updatedAt: dateFromMs(deployment.created),
           status: deployment.readyState ?? deployment.state ?? null, endpointCount: null,
           details: {
-            projectId: project.id, deploymentId: deployment.uid, target,
+            projectId: project.id, deploymentId, target,
             commitSha: deployment.meta?.githubCommitSha ?? null,
             gitBranch: deployment.meta?.githubCommitRef ?? null
           },

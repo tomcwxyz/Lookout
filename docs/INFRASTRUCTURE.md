@@ -22,9 +22,9 @@ Run npm run sync and visit /infrastructure. The read-only worker can run indepen
 - Vercel projects, their GitHub repository identity when explicitly provided by Vercel, and latest deployment for each returned environment.
 - Neon secondary branches older than the configured lifetime threshold get a *review* flag, not an assertion of inactivity or a bill.
 - Latest deployments whose provider state is ERROR or BLOCKED get a failure flag.
-- Vercel project-to-GitHub linking is based only on provider-supplied exact repository identifiers. Neon has no automatic name matching.
+- Vercel project-to-GitHub linking is based only on provider-supplied exact repository identifiers from project linkage or deployment Git metadata. Neon has no automatic name matching.
 
-You can manually associate a Neon or Vercel resource with an observed GitHub repository on /infrastructure. Manual choices survive future syncs; choosing "Unlinked" opts the resource out of automatic linking. Child resources inherit parent links during observation if they have no manual association.
+You can manually associate a Neon or Vercel resource with an observed GitHub repository on /infrastructure. Manual choices survive future syncs; choosing "Unlinked" opts the resource out of automatic linking. Existing child resources inherit manual parent links immediately; newly discovered children inherit during observation if they have no manual association.
 
 ## Important limitations
 

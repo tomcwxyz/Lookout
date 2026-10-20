@@ -22,6 +22,7 @@ describe("Neon read-only observer", () => {
     expect(resources[1]?.isDefault).toBe(true);
     expect(resources[2]?.endpointCount).toBe(1);
     expect(calls.every(c => c.method === "GET")).toBe(true);
+
   });
 });
 
@@ -38,6 +39,18 @@ describe("Vercel read-only observer", () => {
     const resources = await new VercelAdapter({ token: "test", fetchImpl }).discover();
     expect(resources).toHaveLength(2);
     expect(resources[0]?.gitRepository).toBe("acme/site");
-    expect(resources[1]?.key).toBe("vercel:deployment:new");
+    expect(resources[1]?.key).toBe("vercel:deployment:prj_1:production");
+  });
+  it("uses deployment Git metadata to identify a repository when project linkage is absent", async () => {
+    const noLinkFetch = (async (url: string) => {
+      if (url.includes("/v9/projects")) return json({ projects: [{ id: "prj_2", name: "name-does-not-match" }] });
+      if (url.includes("/v6/deployments")) return json({ deployments: [{
+        id: "dpl_2", name: "site", state: "READY", created: 50, meta: { githubOrg: "Org", githubRepo: "ActualRepo" }
+      }] });
+      throw new Error(url);
+    }) as typeof fetch;
+    const fromMetadata = await new VercelAdapter({ token: "test", fetchImpl: noLinkFetch }).discover();
+    expect(fromMetadata[0]?.gitRepository).toBe("org/actualrepo");
+    expect(fromMetadata[1]?.key).toBe("vercel:deployment:prj_2:preview");
   });
 });
