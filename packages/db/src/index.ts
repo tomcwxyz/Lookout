@@ -5,3 +5,6 @@ export {
   getInfrastructurePortfolio, getLinkedResources, setInfrastructureProjectLink
 } from "./infrastructure-repository";
 export { withObservationLease, ObservationAlreadyRunningError } from "./observation-lock";
+
+export { saveWorkDecision, acceptedWorkStatuses } from "./repository";
+export type { AcceptedWorkStatus } from "./repository";
