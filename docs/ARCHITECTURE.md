@@ -1,36 +1,38 @@
 # Lookout architecture
 
-## Core principle
+_Updated 21 October 2026._
 
-Facts come from adapters and verifiable observations; rules are deterministic; AI explains the evidence and suggests decisions. The language model must never be the source of truth for a branch's state, an applied migration, a cloud bill or a deployment.
+## Principle
 
-## Layers
+Sources provide observations; pure rules interpret bounded evidence; AI can explain but never promote unverified claims into facts. Git merge, CI success, Vercel deployment state, human sign-off and agent-reported work are separate evidence types.
 
-- **Connectors:** read-only provider adapters. An adapter returns typed snapshots and links to evidence. Providers and credentials are scoped independently.
-- **Core:** pure TypeScript schemas and assessment functions. No external API calls or database requirements.
-- **Persistence:** Drizzle schema, Postgres snapshots, alerts, sync runs and ideas. Alert keys are stable within each project; no speculative resolution after failed scans.
-- **Agents:** optional LLM brief generator. Gateway model chosen at runtime. Deterministic checks are useful even with AI disabled.
-- **Worker:** scheduled sync outside the request lifecycle. No Vercel cron dependency.
-- **Web:** attention-first overview, observed project information, and quick idea capture. Early production version is single-user protected.
+## Implemented layers
 
-## Data flow
+1. **Provider connectors** (`packages/connectors`): read-only GitHub, Neon and Vercel API adapters, explicit attribution and bounded source sampling.
+2. **Core** (`packages/core`): deterministic rules for branch/PR attention, infrastructure findings, PR discussion extraction, work status and portable checkpoint validation.
+3. **Persistence** (`packages/db`): Drizzle/Postgres snapshots, sync records, attention state, resource links, scan leases, human decisions, project-scoped token hashes and append-only checkpoint events.
+4. **Web** (`apps/web`): server-rendered portfolio, work handovers, explicit human status confirmations, activity timeline, credentials-protected connection management, scan controls and infrastructure page.
+5. **Observation runtime** (`apps/worker`, `apps/web/app/api/cron`): independent polling or three staggered, six-hour Vercel Cron Jobs. Both use per-provider database leases.
+6. **Agent interfaces** (`apps/mcp`, `packages/lookout-mcp`): local database-backed portfolio MCP and standalone npm remote MCP client bridge to project-scoped HTTPS APIs. Optional AI briefs via AI Gateway (`packages/agents`).
 
-GitHub API -> typed ProjectSnapshot -> pure assessProject -> change-aware AI brief -> transactional snapshot and attention upsert -> server-rendered attention inbox.
+## Evidence and identity
 
-In this alpha one repository corresponds to one observed project. Later a user-facing project can group multiple repositories, Neon projects, Vercel apps and tracked work. Model this as separately identified resources with explicit and proposed edges. Never assume similar names imply identity.
+GitHub repository -> observed project -> sampled PRs, issues, branches, CI and plans -> deterministic work/attention suggestions. Human decisions live in a separate authoritative table. A project can link read-only infrastructure resources, with exact Vercel/Git identity when provided and explicit manual links for ambiguous relationships. One observed Git repo is not yet a logical multi-repository project.
 
-## Planned database and deployment observation
+For agent handovers, dashboard-authenticated users issue scoped revocable bearer tokens. A coding assistant uses the bridge to fetch a limited handover, human decisions and next actions or **propose** a validated, idempotent checkpoint. Records are labelled agent-reported and do not alter human-confirmed status. No raw conversation transcript or TOPO personal memory is ingested.
 
-Provide a read-only Neon adapter which inventories database branches, their parent references, creation and compute activity. Prefer actual bill/usage fields over estimates. A cost recommendation must identify the metering source and billing period.
+## Trust boundaries
 
-Provide a Vercel adapter for current deployments, preview URLs and environments. Correlate Git SHA and PR identifier where available, not just branch names.
+- GitHub, Neon and Vercel observer credentials are used only for permitted reads. Lookout does not mutate monitored infrastructure.
+- The dashboard requires single-user Basic Auth; scheduled GET endpoints use a different `CRON_SECRET`; manual POST scan routes also check same-origin.
+- Agent API routes are bearer-protected and project-scoped. Store only hashed token material and show secrets once.
+- Missing or failed provider access is **unknown**, never green. Incomplete scans never imply that unobserved projects were deleted.
+- PR bodies, comments, Markdown plans and agent checkpoints are untrusted text. Claims of tests or completion require independent evidence or human confirmation.
+- Merge does not mean deployed; age does not prove database inactivity; provider error/blocking is not proof an entire service is unusable.
+- Migration files and applied DB migration state are separate; verification against observed production databases is not implemented.
 
-Track migration files and applied-migration history separately. Mark unknown when the target database cannot safely be queried. Never execute application migration SQL from an observation agent.
+## Present limits
 
-## Automation and MCP
+The observer is limited to the newest repositories, bounded PR review/discussion samples and a small selection of conventional Markdown plan files. The dashboard presently highlights technical work signals rather than stable cross-source feature groups. There are no team roles, automatic agent lifecycle hooks, cross-provider transactional edits or destructive automations. External planning documents are not yet ingested.
 
-Initial scheduled worker only observes and records. Upcoming MCP methods: listProjects, getProjectContext, listAttention, captureIdea. Read methods first; writes use scoped auth, audit trail and explicit user approval. Destructive operations are out of scope in the first phases.
-
-## Security
-
-Production requires dashboard authentication even though this alpha is intended for trusted single-user use. Credentials remain server-side. Provider connectors have read scopes. Limit API usage and store no repository source files or secrets. Do not feed arbitrary files or instructions to an LLM. Add deployment secrets handling, per-user credentials and RBAC before a multi-tenant release.
+See [ROADMAP](ROADMAP.md), [SCHEDULED_SYNC](SCHEDULED_SYNC.md), [WORK_HANDOVERS](WORK_HANDOVERS.md) and [AGENT_HANDOVERS](AGENT_HANDOVERS.md).
