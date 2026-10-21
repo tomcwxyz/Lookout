@@ -239,3 +239,13 @@ h1,h2,h3,p { margin-top:0; }
 .agent-source-merge { background:#e7f1ff; color:#3a6093; }
 .agent-source-human { background:#e5f2e7; color:#2c7350; }
 .project-activity { margin-top:15px; }
+
+.agent-setup-heading{display:flex;justify-content:space-between;gap:16px;align-items:start;margin-bottom:20px}
+.agent-setup-heading h2{font-size:20px;margin:8px 0}
+.agent-choices{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.agent-choices button{background:#f2f6f1;color:#365c4c;border:1px solid #d8e5da;font-size:12px;padding:12px 17px}
+.agent-choices button.selected{background:#205b47;color:#fff;border-color:#205b47}
+.agent-setup-primary{background:#205b47!important;padding:13px 20px!important;font-size:13px!important}
+.agent-setup-command{display:block;width:100%;white-space:pre-wrap;overflow-wrap:anywhere;padding:14px;background:#f6f7f4;border-radius:8px;line-height:1.6}
+.agent-manage{margin-top:22px;border-top:1px solid #e4eee6;padding-top:15px}
+.agent-manage summary{cursor:pointer;font-size:12px;font-weight:700}

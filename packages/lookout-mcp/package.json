@@ -1,0 +1,29 @@
+{
+  "name": "@good-ship/lookout-mcp",
+  "version": "0.2.0",
+  "description": "Project-scoped Lookout MCP bridge for coding assistants",
+  "type": "module",
+  "bin": {
+    "lookout-mcp": "./bin/lookout-mcp.mjs"
+  },
+  "files": [
+    "bin/lookout-mcp.mjs",
+    "README.md"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/server": "^2.0.0",
+    "zod": "^4.0.0"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "license": "Apache-2.0",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tomcwxyz/Lookout.git",
+    "directory": "packages/lookout-mcp"
+  }
+}
