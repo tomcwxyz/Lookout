@@ -1,17 +1,51 @@
-# Lookout MCP — local stdio alpha
+# Lookout MCP interfaces
 
-A local MCP server exposes portfolio context without giving coding agents direct provider credentials. The MCP process connects to the same DATABASE_URL used by the Lookout worker.
+_Updated 21 October 2026. There are **two different MCP modes**._
 
-Run from the repository root using: npx tsx apps/mcp/src/index.ts
+## 1. Hosted Lookout handovers (recommended for coding assistants)
 
-Register that command as a stdio MCP server in a compatible coding agent. Working directory must be the Lookout repository, with the DATABASE_URL environment variable configured.
+A standalone local stdio bridge communicates with Lookout's scoped HTTP API. It needs **neither a checkout of this repository nor DATABASE_URL**.
 
-Tools:
-- list_projects (read-only)
-- list_attention (read-only)
-- get_project_context (read-only, numeric projectId)
-- capture_idea (local database write, disabled by default)
+1. Open [Lookout](https://lookout-eosin.vercel.app) and select a project.
+2. Choose **Connect your coding assistant** and prepare a Codex, Claude Code or other MCP connection.
+3. Copy the generated setup command, which includes a **one-time-shown project-scoped token**. Keep it private.
+4. Launch the client and ask for the project's handover to test the connection.
 
-To enable the fourth tool, explicitly set LOOKOUT_MCP_WRITE_ENABLED=true for the MCP process. This does not grant GitHub, database migration or deployment permissions. The host running this process must be trusted because access to its local environment and database credential is sensitive.
+For generic stdio clients configure private environment variables:
 
-In this alpha, the MCP server is **local stdio only**. A remotely hosted MCP endpoint will require per-user authentication, least privilege, audit logs and a proper permissions model before it is enabled.
+```text
+LOOKOUT_API_URL=https://lookout-eosin.vercel.app
+LOOKOUT_API_TOKEN=<private project-scoped token>
+```
+
+Use command `npx` with arguments `-y @good-ship/lookout-mcp@0.2.0`. Avoid writing tokens into public repository files, screenshots, CI logs or shell history.
+
+Remote handover tools:
+- `lookout_get_handover`: bounded recent project context and proposed agent checkpoints.
+- `lookout_get_decisions`: human-confirmed decisions.
+- `lookout_get_next_actions`: next actions from available evidence.
+- `lookout_propose_checkpoint`: explicitly submit an idempotent, agent-reported progress event.
+
+A connected client is not proof that an agent is actively reporting; the first real handshake, a proposed checkpoint, a second client's recovery and token revocation still require acceptance testing.
+
+## 2. Local database-backed portfolio MCP
+
+For local/developer use in a trusted Lookout checkout:
+
+```bash
+npm install
+# Configure DATABASE_URL privately in the server environment
+npm run mcp
+```
+
+The implementation is `apps/mcp/src/index.ts`. It accesses the same Lookout database as the worker and offers:
+- `list_projects`
+- `list_attention`
+- `get_project_context` (numeric project ID)
+- `list_infrastructure`
+- `get_project_infrastructure`
+- `capture_idea` (opt in with `LOOKOUT_MCP_WRITE_ENABLED=true`)
+
+Do not expose the local MCP process or its database connection to the public internet. Its optional `capture_idea` writes to **Lookout's own** database, not provider repositories/databases.
+
+See [AGENT_HANDOVERS](AGENT_HANDOVERS.md) for checkpoint semantics and [PUBLISH_MCP](PUBLISH_MCP.md) for npm release instructions.
