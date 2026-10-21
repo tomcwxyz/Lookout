@@ -45,9 +45,11 @@ export function AgentConnections({projectId,initialTokens}:{
   const url=typeof window==="undefined"?"https://lookout-eosin.vercel.app":window.location.origin;
   const shellQuote=(value:string)=>"'"+value.replaceAll("'","'\\''")+"'";
   const reliableCommand=newToken?
-    ""+
-    (assistant==="codex"?"codex mcp add lookout":assistant==="claude"?"claude mcp add lookout":"# Configure your assistant's stdio MCP server")+
-    " --env LOOKOUT_API_URL="+shellQuote(url)+" --env LOOKOUT_API_TOKEN="+shellQuote(newToken)+
+    (assistant==="codex"
+      ? "codex mcp add lookout --env LOOKOUT_API_URL="+shellQuote(url)+" --env LOOKOUT_API_TOKEN="+shellQuote(newToken)
+      : assistant==="claude"
+        ? "claude mcp add --transport stdio --env LOOKOUT_API_URL="+shellQuote(url)+" --env LOOKOUT_API_TOKEN="+shellQuote(newToken)+" lookout"
+        : "")+
     " -- npx -y @goodship/lookout-mcp@0.2.0":"";
   return <section className="agent-connection">
     <div className="agent-setup-heading"><div><span className="eyebrow">PROJECT CONNECTIONS</span>
