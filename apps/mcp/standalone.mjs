@@ -2,7 +2,7 @@
 import { McpServer } from "@modelcontextprotocol/server";
 import { serveStdio } from "@modelcontextprotocol/server/stdio";
 import * as z from "zod/v4";
-const remoteUrl=process.env.LOOKOUT_API_URL?.replace(/\\/+$/,"");
+const remoteUrl=process.env.LOOKOUT_API_URL?.replace(/\/+$/,"");
 const remoteToken=process.env.LOOKOUT_API_TOKEN;
 if(!remoteUrl||!remoteToken) throw new Error("LOOKOUT_API_URL and LOOKOUT_API_TOKEN are required");
 const parsed=new URL(remoteUrl);

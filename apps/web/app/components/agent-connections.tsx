@@ -45,10 +45,10 @@ export function AgentConnections({projectId,initialTokens}:{
   const url=typeof window==="undefined"?"https://lookout-eosin.vercel.app":window.location.origin;
   const shellQuote=(value:string)=>"'"+value.replaceAll("'","'\\''")+"'";
   const reliableCommand=newToken?
-    "git clone https://github.com/tomcwxyz/Lookout.git && cd Lookout && npm install && "+
+    ""+
     (assistant==="codex"?"codex mcp add lookout":assistant==="claude"?"claude mcp add lookout":"# Configure your assistant's stdio MCP server")+
     " --env LOOKOUT_API_URL="+shellQuote(url)+" --env LOOKOUT_API_TOKEN="+shellQuote(newToken)+
-    " -- npx tsx apps/mcp/src/index.ts":"";
+    " -- npx -y @goodship/lookout-mcp@0.2.0":"";
   return <section className="agent-connection">
     <div className="agent-setup-heading"><div><span className="eyebrow">PROJECT CONNECTIONS</span>
       <h2>Connect your coding assistant</h2>
@@ -63,10 +63,10 @@ export function AgentConnections({projectId,initialTokens}:{
       onClick={()=>void create()}>{busy?"Preparing…":"Prepare connection"}</button>:
       <div className="agent-token-reveal" role="status">
         <strong>Connection ready for {assistant==="codex"?"Codex":assistant==="claude"?"Claude Code":"your assistant"}</strong>
-        <p className="work-caution">This first release uses a local bridge. Paste the setup into your terminal. A native one-click installer will need a published CLI.</p>
+        <p className="work-caution">Paste this command into your terminal after the Lookout MCP package is published. No repository checkout needed.</p>
         {assistant==="other"?<><p>Use the following values in your assistant's MCP server configuration:</p>
           <code>LOOKOUT_API_URL={url}</code><code>LOOKOUT_API_TOKEN={newToken}</code>
-          <p>Command: <code>npx tsx apps/mcp/src/index.ts</code> from a Lookout checkout</p></>:
+          <p>Command after package publication: <code>npx -y @goodship/lookout-mcp@0.2.0</code></p></>:
           <><code className="agent-setup-command">{reliableCommand}</code>
           <button type="button" onClick={async()=>{await navigator.clipboard.writeText(reliableCommand);setCopied(true);}}>
             {copied?"Copied ✓":"Copy setup command"}</button></>}
