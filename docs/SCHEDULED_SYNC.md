@@ -1,34 +1,34 @@
-# Lookout scheduled observation (Vercel)
+# Scheduled and manual observation
 
-The dashboard and the collectors share Lookout's own DATABASE_URL, but collectors are **read-only** against GitHub, Neon, and Vercel. No provider resource is modified.
+_Updated 21 October 2026. The production Lookout instance is running scheduled GitHub, Neon and Vercel observations._
 
-## Production setup
+## Production
 
-Use Vercel project `lookout` with root directory `apps/web`.
+Vercel project `lookout`, application root `apps/web`, uses its own `DATABASE_URL`, not a provider project's database URL. The hosted dashboard is at https://lookout-eosin.vercel.app.
 
-- DATABASE_URL — Lookout's own PostgreSQL database
-- LOOKOUT_DASHBOARD_TOKEN — Basic Auth password for the dashboard
-- GITHUB_TOKEN, GITHUB_OWNER — repository discovery
-- NEON_API_KEY, NEON_ORG_ID — Neon inventory
-- VERCEL_API_TOKEN, VERCEL_TEAM_ID — Vercel deployment inventory
-- CRON_SECRET — a separate, randomly generated secret with at least 32 characters, scoped to Production only; required for scheduled runs
+Required/supported server-side variables:
+- `DATABASE_URL` — Lookout's own Postgres database;
+- `LOOKOUT_DASHBOARD_TOKEN` — single-user Basic Auth;
+- `GITHUB_TOKEN`, optional `GITHUB_OWNER` — read-only GitHub discovery;
+- `NEON_API_KEY`, optional `NEON_ORG_ID` — read-only Neon inventory;
+- `VERCEL_API_TOKEN`, optional `VERCEL_TEAM_ID` — read-only Vercel inventory;
+- `CRON_SECRET` — separate randomly generated secret, at least 32 characters, for Vercel Cron;
+- optional AI Gateway settings for briefs.
 
-Keep all tokens as server-side sensitive variables. Never expose them in source or client-side environment variables.
+All provider credentials stay server-side. The dashboard and cloud collectors do not mutate provider resources.
 
-Three cron entries in `apps/web/vercel.json` run at 00, 20, and 40 minutes past every sixth hour (UTC). Vercel invokes each production GET with `Authorization: Bearer <CRON_SECRET>`. Middleware skips dashboard Basic Auth only for the three scheduled routes. Each route **independently verifies** the bearer token and rejects requests without it. When credentials are missing, the route fails closed. The functions use Node.js runtime, with a requested 300-second max duration. Actual limits depend on the Vercel plan.
+The three Vercel crons in `apps/web/vercel.json` run at minute 00, 20 and 40 of each six-hour UTC cycle. Each GET cron route validates `Authorization: Bearer <CRON_SECRET>` independently of dashboard Basic Auth. The runtime requests up to 300 seconds, subject to plan limits.
 
-Verification:
-1. Confirm production deployment is READY and Cron Jobs are listed in Vercel Settings.
-2. Review the protected dashboard; after cron runs, inspect project and infrastructure observations.
-3. Check `sync_runs` and `source_sync_runs` in Lookout's Neon database for completion/errors.
-4. Review Vercel function logs if source syncs fail. No provider credentials are included in HTTP responses.
+**Live verification (21 October 2026):** Lookout's own database shows successfully completed GitHub, Neon and Vercel scheduled runs. The production web deployment was READY and Lookout schema migrations `0001` through `0005` were applied. These observations do not independently verify each monitored application's health or database migrations.
 
-Local manual bootstrap: `npm run sync` with database and provider tokens in a local, uncommitted `.env`.
+## Manual scans
 
-Limitations: The first GitHub sweep scans the 25 most recently pushed repositories by default; `LOOKOUT_MAX_REPOS` can change this. A sync may take time when there are many repos/branches, and missing projects from a capped scan are not treated as deleted. Cron runs are not retroactively triggered when deploying; the first real observation occurs at the next scheduled invocation or a local manual sync.
+**Scan all** and individual provider buttons use authenticated, same-origin POST routes at `/api/scan/github`, `/api/scan/neon` and `/api/scan/vercel`. Manual scans and cron collectors share per-provider atomic database leases (migration `0003_observation_locks.sql`); duplicate concurrent scans yield HTTP 409. Leases expire after 10 minutes, and an unusually large sync can still hit serverless request limits.
 
-## User-initiated observations
+For local development run `npm run sync`; the separate `npm run worker` provides a worker scheduler without Vercel. Configure credentials locally without committing `.env`.
 
-The dashboard and infrastructure view include **Scan all** and individual provider buttons. These send authenticated same-origin POST requests to /api/scan/github, /api/scan/neon, and /api/scan/vercel. Dashboard Basic Auth remains required; provider API credentials never reach the browser. Exact Origin checking protects against CSRF. Each result reports the resource count and refreshes the dashboard.
+## Coverage / interpretation
 
-Manual and scheduled scans share the same per-provider atomic database lease (migration 0003). An overlapping scan receives HTTP 409. Leases expire after 10 minutes if a serverless process is interrupted. Serverless functions request up to 300 seconds, subject to Vercel plan limits. The scan endpoint requires a live connection until completion and can time out on large portfolios. Use scheduled syncs for ongoing monitoring.
+`LOOKOUT_MAX_REPOS` defaults to **25 most recently pushed** repositories; adjust it for a larger portfolio and verify the scan completes within runtime limits. Other adapters and PR/branch inventories have their own sampling caps. An omitted resource from a capped or failed run is **not** proven deleted; previously collected observations may be stale and must retain their last-observed timestamps.
+
+Check Vercel project Cron Jobs, Lookout `sync_runs` / `source_sync_runs`, UI timestamps and Vercel logs when debugging. Provider error states, branch age and work inference are prompts for review, not a basis for automatic destructive action.

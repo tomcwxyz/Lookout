@@ -1,35 +1,33 @@
-# Lookout project work handovers (initial release)
+# Lookout work handovers
 
-Lookout should answer **where did I leave this, what's finished, and what decision is needed next?** Git metadata is evidence but not the full story of delivery.
+_Updated 21 October 2026._
 
-## Observations and evidence
+The goal is to answer: **what were we doing, what has actually changed, what remains and which decision is needed?**
 
-The GitHub observer now samples:
-- Open draft and review-ready pull requests
-- Recent merged PRs (up to 6 per repository)
-- Open issues and explicit QA/review labels (up to 30)
-- Up to two Markdown plan files named ROADMAP, PLAN, STATUS, TODO or BACKLOG, at root or in docs/, and their first 20 checkbox tasks
+## Current implementation
 
-Signals always link to the original PR, issue, or roadmap line. Sampled plans are **not** guaranteed to be the most recent or only plans. The first pass does not read issues' complete descriptions or files outside the sampled directories.
+The GitHub observer samples:
+- Open PR purpose, author checklists, bounded review status, CI checks and recent discussion;
+- Recently merged PRs (up to six per repository);
+- Open issues and explicit testing/review labels;
+- Up to two conventional Markdown plans (`ROADMAP`, `PLAN`, `STATUS`, `TODO`, `BACKLOG`) in the repository root or `docs/`, including bounded checkbox lines.
 
-## What statuses mean
+The overview presents a prioritised **Work to pick up** queue, and project pages provide linked work evidence, inferred status and a suggested next action. Check-run failures, changes requested, testing outstanding, review requests, draft/in-progress work, possible pauses, merged-but-unverified changes, older plans and automated maintenance are distinguished. Unavailable evidence is marked unknown, not successful.
 
-- **Human review / Testing needed**: an open, review-ready PR or issue explicitly labelled for testing or review. This signals work needing a decision, not proof that QA was carried out.
-- **In progress / Possibly paused**: an open draft or old, unmerged PR. Staleness never means the work should be deleted.
-- **Merged · verify**: a PR reached the repository. It does not prove production deployment, acceptance, testing, or tidy-up.
-- **Planned · unverified**: unchecked roadmap item or open issue. It may already have been partly or completely built.
-- **Marked complete in plan**: a checked box, not independent evidence of acceptance.
+A PR assertion such as "tests passed" is a **claim**, not independent CI evidence. Merged is not the same as deployed or accepted; an old unchecked plan is not proof a feature remains unbuilt.
 
-## Human confirmations
+## Human progress decisions
 
-Each identified item has a **Confirm progress** action with a status and optional follow-up note. Possible outcomes include **Complete / accepted**, **Implemented · tidy-up remains**, **Needs human testing**, **Needs human review**, **Actively in progress**, **On hold**, and **Scoped, not built**.
+For an individual source work item, **Confirm progress** offers **Complete / accepted**, **Implemented · tidy-up remains**, **Needs human testing**, **Needs human review**, **Actively in progress**, **On hold**, and **Scoped, not built**, plus an optional next-step note.
 
-Confirmed statuses are saved in Lookout's work_decisions table and are never overwritten by provider scans. You can revert to an evidence suggestion. A confirmation applies to its stable PR, issue or plan-line key. If source items move out of the bounded recent-activity sample, the old confirmation remains stored but won't be displayed until that source key reappears.
+These decisions persist in Lookout's own `work_decisions` table (migration `0004_work_decisions.sql`) and override inferred status without rewriting the underlying evidence. If a signal falls out of the bounded sampling window, its decision remains stored but may not display until that work key reappears.
 
-The overview prioritises work needing attention. Each project's work handover shows evidence, the inferred status, and any explicit human confirmation. Technical branch and infrastructure detail remains available underneath.
+## Related agent history
 
-## Limitations and next iterations
+Each project's activity timeline can also display **agent-reported** checkpoints, **GitHub-observed** merges and **human-confirmed** statuses as distinct sources. See [AGENT_HANDOVERS](AGENT_HANDOVERS.md). Connecting assistants and verifying actual cross-agent recovery remains an acceptance step, not a demonstrated production outcome.
 
-The initial work model is **evidence-linked, not a comprehensive project-management database**. It does not yet group all commits and PRs into larger features, establish release or user acceptance automatically, ingest external Docs/Drive/Notion/meeting notes, reconcile stale roadmap tasks with implementation, or infer work content through LLMs. A robust next iteration should identify the latest authoritative documents, group changes into themes, recognise test evidence, and prompt a human to resolve contradictions.
+## Limits / next iteration
 
-The additive database migration is `0004_work_decisions.sql`. Apply it only to Lookout's own database, not databases being observed.
+The current unit of observation is a repository or individual PR/issue/plan item, not a durable feature spanning multiple PRs and repos. PR details, discussions, issues and plan files are sampled; documentation or user conversations outside GitHub are not currently ingested. The system does not yet discover the authoritative current plan, reconcile stale tasks against newer code, verify deployments or migrations for every work item, or automatically close work as accepted.
+
+Next: stable feature groups, explicit evidence grading and clearer coverage; human reviews of ambiguous state; change-driven history and lower-noise attention policies. See [ROADMAP](ROADMAP.md).
