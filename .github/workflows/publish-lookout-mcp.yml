@@ -20,6 +20,6 @@ jobs:
       - name: Check tag matches package version
         run: node -e "const p=require('./packages/lookout-mcp/package.json');if(process.env.GITHUB_REF_NAME!=='lookout-mcp-v'+p.version)process.exit(1)"
       - run: node --check packages/lookout-mcp/bin/lookout-mcp.mjs
-      - run: node --test packages/lookout-mcp/test/launch.test.mjs
+      - run: node --test packages/lookout-mcp/test/launch.smoke.mjs
       - run: npm pack --workspace @goodship/lookout-mcp --dry-run
       - run: npm publish --workspace @goodship/lookout-mcp --access public
