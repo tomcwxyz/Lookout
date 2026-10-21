@@ -2,94 +2,83 @@
 
 **Know where everything stands.**
 
-Lookout is an open-source, agent-led project observer. It gathers evidence about software projects, highlights unfinished work and provides short, grounded handovers so you can pick up where you left off.
+Lookout is an open-source, agent-led software project observer. It brings together source-linked GitHub activity, Neon and Vercel infrastructure observations, human progress decisions and portable coding-agent handovers. Its purpose is to answer **what changed, where did we leave things, what is verified and what needs attention?**
 
-The first alpha includes a **local stdio MCP server** (npm run mcp, see docs/MCP.md). It supports read-only project context and optionally idea capture.
+**Current status (21 October 2026): working single-user alpha.** The [production dashboard](https://lookout-eosin.vercel.app) is deployed on Vercel; GitHub, Neon and Vercel scheduled observations are operating. Its core checks and deployment pipeline are tested. Agent-assisted handovers are implemented, but require end-to-end testing with real connected coding assistants.
 
-The first alpha supports **GitHub discovery**, ageing branch and PR checks, latest workflow failure detection, an attention inbox, project drill-down, quick idea capture and optional AI-generated briefs. **Neon and Vercel observation are planned connectors, not yet live.**
+## What is available
+
+| Area | Status |
+| --- | --- |
+| GitHub repository, branch, PR, issue and workflow observations | Operating; bounded by per-source limits |
+| Neon projects, branches and compute inventory | Operating; no billing claims or migration verification |
+| Vercel projects and latest deployments by environment | Operating; source-linked error/blocked findings |
+| Scheduled observations and authenticated manual scans | Operating, with per-provider concurrency leases |
+| Evidence-backed project work queue and PR discussion summaries | Implemented; incomplete source sampling is disclosed |
+| Human-confirmed work statuses with optional next-step notes | Implemented; survive subsequent scans |
+| Project-scoped coding-agent tokens, checkpoint timeline and handover API | Implemented; real-agent use not yet proven |
+| Local portfolio MCP and published remote bridge | Available; `@good-ship/lookout-mcp@0.2.0` |
+| Optional AI project briefs | Available when AI Gateway is configured |
+
+For full details see [work handovers](docs/WORK_HANDOVERS.md), [agent handovers](docs/AGENT_HANDOVERS.md), [MCP](docs/MCP.md), [infrastructure](docs/INFRASTRUCTURE.md) and the [roadmap](docs/ROADMAP.md).
 
 ## Architecture
 
-- Next.js web interface (responsive, read-only observations)
-- Independent TypeScript worker for periodic GitHub discovery
-- Postgres + Drizzle, compatible with Neon or self-hosted Postgres
-- Rule-based attention detection with evidence links and idempotent resolution
-- Optional AI historian (Vercel AI SDK v6 / AI Gateway); disabled unless configured
-- Adapter interface for adding other Git providers, databases and deployment sources
+- **Web:** Next.js dashboard with portfolio attention, project pages, work decisions, project-scoped connections and infrastructure inventory.
+- **Observers:** read-only GitHub, Neon and Vercel adapters; manual and scheduled execution.
+- **Core:** typed observations and deterministic, evidence-linked assessments.
+- **Database:** Postgres + Drizzle; Lookout only writes to **its own** database.
+- **Agents:** an optional AI brief generator, local MCP for portfolio access and a published npm MCP bridge for scoped remote project handovers.
 
-Lookout **does not** delete branches, merge PRs, change databases, or deploy code.
+A merged PR is not automatically *accepted* or *deployed*. A stale branch is a review signal, not deletion advice. An agent's checkpoint is a **claim**, not verified completion. Lookout does **not** merge PRs, delete branches, deploy applications or run migrations against monitored projects.
 
-## Quick start
+## Use the hosted alpha
 
-Requirements: Node.js 22+, npm 10+, Postgres 15+ and a GitHub access token.
+Open [Lookout](https://lookout-eosin.vercel.app), sign in with the configured dashboard credentials and review **Work to pick up**, project pages and **Infrastructure**. Use **Scan all** or scan a single provider for an on-demand refresh.
 
-1. Clone this repository and run: npm install
-2. Copy .env.example to .env.
-3. Set DATABASE_URL and GITHUB_TOKEN. For GitHub, prefer a fine-grained, read-only token scoped only to the repositories you want to observe. Repository metadata and read access to commits, pull requests, issues and Actions are needed for full coverage. Do not give write scopes.
-4. Run: npm run db:migrate
-5. Run: npm run sync
-6. Run: npm run dev and open http://localhost:3000.
+To connect a coding assistant, open a project and choose **Connect your coding assistant**. Create a project-scoped token and copy the generated Codex / Claude Code setup command, or configure another MCP client with `LOOKOUT_API_URL`, `LOOKOUT_API_TOKEN` and `npx -y @good-ship/lookout-mcp@0.2.0`. The token is shown once; keep it private and revoke it when no longer needed. **No repository checkout or database credentials are needed for this bridge.** See [agent handovers](docs/AGENT_HANDOVERS.md).
 
-The dashboard shows **no fabricated project data** before the first sync.
+## Self-hosted development
 
-To enable AI briefs, set AI_GATEWAY_API_KEY and LOOKOUT_AI_MODEL to a currently supported gateway model ID (provider/model). AI is optional; all deterministic checks work without it. Briefs are only regenerated when observations change, to limit cost.
+Requirements: Node.js 22+ (production currently uses Node 24), npm 10+, Postgres 15+ and a read-only GitHub token.
 
-To enable periodic observation, run npm run worker separately (default every 60 minutes). The worker is independent of Vercel and suitable for a service container. For production, use a supervisor; do not depend on a web request to keep it running.
+```bash
+git clone https://github.com/tomcwxyz/Lookout.git
+cd Lookout
+npm install
+cp .env.example .env
+# Set DATABASE_URL and GITHUB_TOKEN in .env
+npm run db:migrate
+npm run sync
+npm run dev
+```
 
-## Infrastructure observers (Alpha 0.2 development)
+Open http://localhost:3000. There is no synthetic project data before the first successful scan.
 
-Set NEON_API_KEY and/or VERCEL_API_TOKEN to activate the corresponding read-only observer. Use NEON_ORG_ID and VERCEL_TEAM_ID to select the correct scope. Run npm run db:migrate again before syncing, then open /infrastructure. See docs/INFRASTRUCTURE.md.
+Useful commands:
 
-The new observers flag long-lived Neon branches for **review** and identify failed latest Vercel deployments. They do not calculate actual cost or verify whether application migrations have run.
+```bash
+npm run typecheck
+npm test
+npm run build
+npm run sync
+npm run worker
+npm run mcp
+```
 
-## Configuration
+Set `NEON_API_KEY` and/or `VERCEL_API_TOKEN` (and the corresponding organisation/team selectors) to enable cloud inventory. For Vercel production set `CRON_SECRET` and see [scheduled observation](docs/SCHEDULED_SYNC.md). The standalone polling worker is an alternative to Vercel cron.
 
-| Variable | Meaning |
-| --- | --- |
-| DATABASE_URL | Postgres connection URI |
-| GITHUB_TOKEN | Read-only GitHub token |
-| GITHUB_OWNER | Optional owner filter; omit to inspect accessible repositories |
-| LOOKOUT_MAX_REPOS | Maximum repositories per sync (default 25) |
-| LOOKOUT_STALE_BRANCH_DAYS | Branch inactivity threshold (default 14) |
-| LOOKOUT_STALE_PR_DAYS | PR inactivity threshold (default 14) |
-| LOOKOUT_INCLUDE_FORKS | Include forked repositories (default false) |
-| LOOKOUT_POLL_MINUTES | Watcher interval, minimum 15 |
-| LOOKOUT_DASHBOARD_TOKEN | Production dashboard Basic-auth password |
-| AI_GATEWAY_API_KEY | Optional AI Gateway credential |
-| LOOKOUT_AI_MODEL | Optional gateway model ID |
+Key settings: `DATABASE_URL`, `GITHUB_TOKEN`, optional `GITHUB_OWNER`, `LOOKOUT_MAX_REPOS` (default **25**), `LOOKOUT_STALE_BRANCH_DAYS`, `LOOKOUT_STALE_PR_DAYS`, `LOOKOUT_DASHBOARD_TOKEN`, `NEON_API_KEY`, `NEON_ORG_ID`, `VERCEL_API_TOKEN`, `VERCEL_TEAM_ID`, `CRON_SECRET` and optional `AI_GATEWAY_API_KEY` / `LOOKOUT_AI_MODEL`. See [`.env.example`](.env.example) for the current full list.
 
-Production requests fail closed unless LOOKOUT_DASHBOARD_TOKEN is set. Use HTTPS; single-user Basic authentication is **temporary**, not the target team auth model. Never expose GITHUB_TOKEN or DATABASE_URL in client-side environment variables.
+## Boundaries and next work
 
-## Safety and scope
+- Repo, branch, PR, issue and plan discovery is deliberately capped; **a sampled inventory is not a complete inventory**. GitHub defaults to 25 recently pushed repositories.
+- Infrastructure observations identify status and ageing but do not prove cost, inactivity, migration application or release acceptance.
+- Each GitHub repository currently stands for one observed project. Multiple repositories/services cannot yet be unified into one logical feature/project model.
+- A subset of PR bodies, discussion, issues and Markdown plans inform work handovers. External documents, feature grouping and authoritative-plan selection are not yet implemented.
+- Agent connections and checkpoints are proposal-only and require live acceptance testing. No background end-of-session capture or default TOPO personal-memory ingestion.
+- The protected single-user Basic Auth dashboard is not a team-ready authentication model.
 
-- GitHub token is only used for **GET** requests in the observer.
-- A stale branch is a **review suggestion**, not evidence that deletion is safe.
-- Missing timestamps remain unknown; unavailable Actions data does not count as passing CI.
-- An incomplete sync never resolves previous alerts for a project that was not inspected.
-- Open issues are counted, but a GitHub Issues endpoint returns PRs too; these are filtered out.
-- The branch observer examines at most 25 branches per repository and the first 100 open PRs/issues in this alpha; numbers are observed counts, **not a complete inventory** of very large repositories.
-- Migration state, cloud costs and deployment readiness cannot be asserted until dedicated read-only adapters and permissions are connected.
-- Repo text used in AI summaries is untrusted input. AI output is labelled and cannot take actions.
+**Next priorities:** validate real cross-agent handovers; group work by features and evidence; verify deployments/migrations with permissions; improve coverage, alert policies and documentation freshness. See [ROADMAP](docs/ROADMAP.md).
 
-## Commands
-
-- npm run dev — web UI
-- npm run sync — one-off observation
-- npm run worker — continuous polling worker
-- npm run db:migrate — initial database schema
-- npm run typecheck — TypeScript checking
-- npm test — rule and adapter tests
-- npm run build — production web build
-
-## Next milestones
-
-1. Expand GitHub pagination, failure isolation and repository-to-project grouping.
-2. Add Neon branch, compute and usage observation with explicit resource linking and cost evidence.
-3. Add Vercel deployment and environment observation.
-4. Correlate Git branches, DB branches, PRs and previews.
-5. Add migration verification via read-only applied-migration queries.
-6. Add MCP tools, configurable automations, proper accounts, RBAC and multi-source Git.
-
-See docs/ARCHITECTURE.md for design principles and docs/ROADMAP.md for build stages.
-
-Apache-2.0. See LICENSE.
+Apache-2.0. See [LICENSE](LICENSE).
