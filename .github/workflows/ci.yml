@@ -15,6 +15,9 @@ jobs:
         with:
           node-version: 22
       - run: npm install --no-audit --no-fund
+      - run: node --check packages/lookout-mcp/bin/lookout-mcp.mjs
+      - run: node --test packages/lookout-mcp/test/launch.test.mjs
+      - run: npm pack --workspace @goodship/lookout-mcp --dry-run
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
