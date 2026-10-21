@@ -50,7 +50,7 @@ export function AgentConnections({projectId,initialTokens}:{
       : assistant==="claude"
         ? "claude mcp add --transport stdio --env LOOKOUT_API_URL="+shellQuote(url)+" --env LOOKOUT_API_TOKEN="+shellQuote(newToken)+" lookout"
         : "")+
-    " -- npx -y @goodship/lookout-mcp@0.2.0":"";
+    " -- npx -y @good-ship/lookout-mcp@0.2.0":"";
   return <section className="agent-connection">
     <div className="agent-setup-heading"><div><span className="eyebrow">PROJECT CONNECTIONS</span>
       <h2>Connect your coding assistant</h2>
@@ -68,7 +68,7 @@ export function AgentConnections({projectId,initialTokens}:{
         <p className="work-caution">Paste this command into your terminal after the Lookout MCP package is published. No repository checkout needed.</p>
         {assistant==="other"?<><p>Use the following values in your assistant's MCP server configuration:</p>
           <code>LOOKOUT_API_URL={url}</code><code>LOOKOUT_API_TOKEN={newToken}</code>
-          <p>Command after package publication: <code>npx -y @goodship/lookout-mcp@0.2.0</code></p></>:
+          <p>Command after package publication: <code>npx -y @good-ship/lookout-mcp@0.2.0</code></p></>:
           <><code className="agent-setup-command">{reliableCommand}</code>
           <button type="button" onClick={async()=>{await navigator.clipboard.writeText(reliableCommand);setCopied(true);}}>
             {copied?"Copied ✓":"Copy setup command"}</button></>}

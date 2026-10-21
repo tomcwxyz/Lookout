@@ -1,5 +1,5 @@
 {
-  "name": "@goodship/lookout-mcp",
+  "name": "@good-ship/lookout-mcp",
   "version": "0.2.0",
   "description": "Project-scoped Lookout MCP bridge for coding assistants",
   "type": "module",
