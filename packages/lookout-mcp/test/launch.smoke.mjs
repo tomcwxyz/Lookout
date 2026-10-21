@@ -3,7 +3,7 @@ import {spawn} from "node:child_process";
 import {fileURLToPath} from "node:url";
 import {resolve,dirname} from "node:path";
 import assert from "node:assert/strict";
-const bin=resolve(dirname(fileURLToPath(import.meta.url)),"../bin/lookout-mcp.mjs");
+const bin=process.env.LOOKOUT_MCP_BIN??resolve(dirname(fileURLToPath(import.meta.url)),"../bin/lookout-mcp.mjs");
 test("standalone MCP starts without the monorepo database",async()=>{
  const child=spawn(process.execPath,[bin],{
   env:{...process.env,LOOKOUT_API_URL:"https://example.org",LOOKOUT_API_TOKEN:"smoke-test-only"},

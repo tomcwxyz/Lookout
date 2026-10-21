@@ -22,4 +22,11 @@ jobs:
       - run: node --check packages/lookout-mcp/bin/lookout-mcp.mjs
       - run: node --test packages/lookout-mcp/test/launch.smoke.mjs
       - run: npm pack --workspace @goodship/lookout-mcp --dry-run
+      - name: Verify clean npm tarball install
+        run: |
+          temp="$(mktemp -d)"
+          npm pack --workspace @goodship/lookout-mcp --pack-destination "$temp" >/dev/null
+          tarball="$(find "$temp" -maxdepth 1 -name '*.tgz' -print -quit)"
+          npm install --prefix "$temp/clean" --no-audit --no-fund "$tarball"
+          LOOKOUT_MCP_BIN="$temp/clean/node_modules/@goodship/lookout-mcp/bin/lookout-mcp.mjs" node --test packages/lookout-mcp/test/launch.smoke.mjs
       - run: npm publish --workspace @goodship/lookout-mcp --access public
