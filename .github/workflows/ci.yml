@@ -25,6 +25,13 @@ jobs:
           tarball="$(find "$temp" -maxdepth 1 -name '*.tgz' -print -quit)"
           npm install --prefix "$temp/clean" --no-audit --no-fund "$tarball"
           LOOKOUT_MCP_BIN="$temp/clean/node_modules/@good-ship/lookout-mcp/bin/lookout-mcp.mjs" node --test packages/lookout-mcp/test/launch.smoke.mjs
+      - name: Verify published npm release
+        run: |
+          version="$(npm view @good-ship/lookout-mcp@0.2.0 version)"
+          test "$version" = "0.2.0"
+          temp="$(mktemp -d)"
+          npm install --prefix "$temp" --no-audit --no-fund @good-ship/lookout-mcp@0.2.0
+          LOOKOUT_MCP_BIN="$temp/node_modules/@good-ship/lookout-mcp/bin/lookout-mcp.mjs" node --test packages/lookout-mcp/test/launch.smoke.mjs
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
