@@ -44,19 +44,11 @@ export function AgentConnections({projectId,initialTokens}:{
   const active=tokens.filter(t=>!t.revokedAt);
   const url=typeof window==="undefined"?"https://lookout-eosin.vercel.app":window.location.origin;
   const shellQuote=(value:string)=>"'"+value.replaceAll("'","'\\''")+"'";
-  const command=newToken?assistant==="codex"
-    ? "codex mcp add lookout --env LOOKOUT_API_URL="+shellQuote(url)+" --env LOOKOUT_API_TOKEN="+shellQuote(newToken)+" -- npx -y tsx@4 https://raw.githubusercontent.com/tomcwxyz/Lookout/main/apps/mcp/src/index.ts"
-    : assistant==="claude"
-      ? "claude mcp add lookout --env LOOKOUT_API_URL="+shellQuote(url)+" --env LOOKOUT_API_TOKEN="+shellQuote(newToken)+" -- npx -y tsx@4 https://raw.githubusercontent.com/tomcwxyz/Lookout/main/apps/mcp/src/index.ts"
-      : "";
-  // A standalone remote TypeScript URL cannot resolve workspace packages. Use the
-  // checked-out repository's MCP entrypoint until a packaged CLI is published.
   const reliableCommand=newToken?
     "git clone https://github.com/tomcwxyz/Lookout.git && cd Lookout && npm install && "+
     (assistant==="codex"?"codex mcp add lookout":assistant==="claude"?"claude mcp add lookout":"# Configure your assistant's stdio MCP server")+
     " --env LOOKOUT_API_URL="+shellQuote(url)+" --env LOOKOUT_API_TOKEN="+shellQuote(newToken)+
     " -- npx tsx apps/mcp/src/index.ts":"";
-  void command;
   return <section className="agent-connection">
     <div className="agent-setup-heading"><div><span className="eyebrow">PROJECT CONNECTIONS</span>
       <h2>Connect your coding assistant</h2>
