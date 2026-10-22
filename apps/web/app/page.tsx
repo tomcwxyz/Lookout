@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ScanControls } from "./components/scan-controls";
 import { deriveWorkHandover } from "@lookout/core";
 import { workStageLabels, confirmedStageLabels, effectiveWorkStatus } from "./components/work-handover";
-import { databaseConfigured, getPortfolio, getInfrastructurePortfolio } from "@lookout/db";
+import { databaseConfigured, getPortfolio, getInfrastructurePortfolio, getLogicalPortfolio } from "@lookout/db";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +19,7 @@ export default async function Home() {
     catch { error = "Database unavailable or migration not yet applied. Check DATABASE_URL and run npm run db:migrate."; }
   }
   const infrastructure = databaseConfigured() ? await getInfrastructurePortfolio().catch(() => null) : null;
+  const logical = databaseConfigured() ? await getLogicalPortfolio().catch(() => null) : null;
   const infraAttention = infrastructure?.findings.length ?? 0;
   const allProjects = data?.projects ?? [];
   const items = data?.attention ?? [];
@@ -53,7 +54,7 @@ export default async function Home() {
         <nav className="nav">
           <Link href="/" className="nav-link active"><span>▦</span> Overview</Link>
           <a href="#attention" className="nav-link"><span>◇</span> Attention inbox <span className="nav-count">{items.length}</span></a>
-          <a href="#projects" className="nav-link"><span>⌁</span> Projects</a>
+          <Link href="/portfolio" className="nav-link"><span>⌁</span> Project portfolio</Link>
           <Link href="/connections" className="nav-link"><span>⌘</span> Web chat connection</Link>
           <Link href="/infrastructure" className="nav-link"><span>♧</span> Infrastructure {infraAttention > 0 && <span className="nav-count">{infraAttention}</span>}</Link>
         </nav>
@@ -89,7 +90,7 @@ export default async function Home() {
         </section>
 
         <div className="metrics">
-          <div className="metric"><span>Tracked projects</span><strong>{allProjects.length}</strong><small>Repositories observed</small></div>
+          <div className="metric"><span>Portfolio projects</span><strong>{logical?.projects.length ?? allProjects.length}</strong><small>{logical?.coverage.inventoriedRepositories ?? allProjects.length} repos inventoried · {logical?.coverage.detailedRepositories ?? allProjects.length} inspected</small></div>
           <div className="metric"><span>Need attention</span><strong className="accent-amber">{projectCount}</strong><small>{items.length} open findings</small></div>
           <div className="metric"><span>Open pull requests</span><strong>{prs}</strong><small>Across tracked projects</small></div>
           <div className="metric"><span>Git branches</span><strong>{branches}</strong><small>Infrastructure alerts: {infraAttention}</small></div>
@@ -106,7 +107,7 @@ export default async function Home() {
                 </article>)}</div>}
           </section>
           <section className="panel projects-panel" id="projects">
-            <div className="panel-heading"><div><span className="eyebrow">CONNECTED CODEBASES</span><h2>Your projects</h2></div><span className="count-pill">{allProjects.length}</span></div>
+            <div className="panel-heading"><div><span className="eyebrow">CONNECTED CODEBASES</span><h2>Your projects</h2></div><Link href="/portfolio" className="count-pill">All {logical?.projects.length ?? allProjects.length} projects →</Link></div>
             {allProjects.length === 0 ? <div className="empty"><span className="empty-icon">⌘</span><h3>No projects discovered</h3><p>Run the worker with a read-only GitHub token to discover repositories and build their first project snapshots.</p></div> :
               <div className="project-list">{allProjects.map(project => {
                 const pending = items.filter(item => item.projectId === project.id);

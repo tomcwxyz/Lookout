@@ -82,3 +82,11 @@ Key settings: `DATABASE_URL`, `GITHUB_TOKEN`, optional `GITHUB_OWNER`, `LOOKOUT_
 **Next priorities:** validate real cross-agent handovers; group work by features and evidence; verify deployments/migrations with permissions; improve coverage, alert policies and documentation freshness. See [ROADMAP](docs/ROADMAP.md).
 
 Apache-2.0. See [LICENSE](LICENSE).
+
+## Portfolio projects and broader GitHub coverage (October 2026)
+
+The `/portfolio` screen shows **logical projects**, separate from GitHub repository observations. It supports human-confirmed lifecycle states (exploring, building, testing, live, maintaining, paused, archived), optional notes, projects without code, many-repository grouping, and explicit Neon/Vercel resource association. Observations never overwrite confirmed status.
+
+Lookout now inventories up to 500 repositories visible to its own GitHub token (public and authorised private), then inspects a rotating batch of 15 in detail each hour. The UI and ChatGPT MCP list both report inventory and detailed-inspection coverage, including failed inspections. Private access depends on the token permissions; an inaccessible repository is not proof that it does not exist.
+
+Apply the additive migration `0007_portfolio_inventory.sql` to Lookout's own database before deploying. See [scheduled sync](docs/SCHEDULED_SYNC.md) for batch sizing and access notes.

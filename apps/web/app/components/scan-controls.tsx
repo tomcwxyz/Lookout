@@ -4,8 +4,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 type Provider = "github" | "neon" | "vercel";
-type ScanState = "idle" | "running" | "completed" | "failed" | "already_running";
-type Result = { state: ScanState; count?: number; message?: string };
+type ScanState = "idle" | "running" | "completed" | "partial" | "failed" | "already_running";
+type Result = { state: ScanState; count?: number; inventoried?: number; failures?: number; message?: string };
 const providers: Provider[] = ["github", "neon", "vercel"];
 const names: Record<Provider, string> = { github: "GitHub", neon: "Neon", vercel: "Vercel" };
 
@@ -21,14 +21,15 @@ export function ScanControls({ compact = false }: { compact?: boolean }) {
         method: "POST", credentials: "same-origin", cache: "no-store",
         headers: { Accept: "application/json" }
       });
-      const result = await response.json() as { status?: ScanState; count?: number; error?: string };
+      const result = await response.json() as { status?: ScanState; count?: number; inventoried?: number; failures?: number; error?: string };
       if (!response.ok) {
         setResults(current => ({ ...current, [provider]: {
           state: response.status === 409 ? "already_running" : "failed",
           message: result.error ?? "Scan failed"
         } }));
       } else {
-        setResults(current => ({ ...current, [provider]: { state: "completed", count: result.count } }));
+        setResults(current => ({ ...current, [provider]: { state: result.status === "partial" ? "partial" : "completed", count: result.count,
+          inventoried: result.inventoried, failures: result.failures } }));
       }
     } catch {
       setResults(current => ({ ...current, [provider]: {
@@ -60,7 +61,9 @@ export function ScanControls({ compact = false }: { compact?: boolean }) {
           <span className="scan-provider-title">{names[provider]}</span>
           <span className={"scan-state scan-state-" + (result?.state ?? "idle")} role="status" aria-live="polite">
             {result?.state === "running" ? "Scanning…" :
-              result?.state === "completed" ? result.count + " observed" :
+              result?.state === "completed" || result?.state === "partial" ?
+                (result.inventoried !== undefined ? result.inventoried + " inventoried · " + result.count + " inspected" : result.count + " observed") +
+                (result.failures ? " · " + result.failures + " failed" : "") :
               result?.state === "already_running" ? "Already running" :
               result?.state === "failed" ? "Failed" : "Not scanned"}
           </span>
