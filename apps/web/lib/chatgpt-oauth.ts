@@ -61,7 +61,7 @@ export function signConsent(payload: ConsentPayload, secret: string) {
 }
 
 export function verifyConsent(encoded: string, signature: string, secret: string): ConsentPayload | null {
-  if (!encoded || encoded.length > 8000 || !signature || !secret) return null;
+  if (!encoded || encoded.length > 8000 || !/^[A-Za-z0-9_-]{43}$/.test(signature) || !secret) return null;
   const expected = createHmac("sha256", secret).update(encoded).digest("base64url");
   if (signature.length !== expected.length ||
     !timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) return null;

@@ -59,7 +59,7 @@ read-only. Existing project-scoped agent tokens remain restricted.
 
 **Pilot limitations:** One dashboard owner; no independent user accounts.
 The Basic-auth password is used to confirm consent. To disconnect OAuth
-sessions immediately, revoke their stored records in Lookout's OAuth tables;
+sessions immediately, use the **Disconnect all ChatGPT OAuth sessions** button on Lookout's Web chat connection page;
 changing the separate owner Bearer token does not revoke OAuth sessions.
 For general public use, adopt a managed OAuth identity provider and
 per-user permissions.
