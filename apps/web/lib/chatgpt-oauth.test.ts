@@ -2,12 +2,35 @@ import { createHash } from "node:crypto";
 import { describe, expect, it, vi, afterEach } from "vitest";
 import {
   RESOURCE, validClientId, validateAuthorizationParams, validateChatGPTClient,
-  signConsent, verifyConsent
+  signConsent, verifyConsent, sameOriginConsentPost
 } from "./chatgpt-oauth";
 
 afterEach(() => vi.unstubAllGlobals());
 
 describe("ChatGPT OAuth security", () => {
+  it("allows browser same-origin consent without Origin but blocks cross-site posts", () => {
+    expect(sameOriginConsentPost(new Headers({
+      "sec-fetch-site": "same-origin"
+    }))).toBe(true);
+    expect(sameOriginConsentPost(new Headers({
+      "referer": "https://lookout-eosin.vercel.app/oauth/authorize"
+    }))).toBe(true);
+    expect(sameOriginConsentPost(new Headers({
+      "origin": "https://lookout-eosin.vercel.app",
+      "sec-fetch-site": "same-origin"
+    }))).toBe(true);
+    expect(sameOriginConsentPost(new Headers({
+      "origin": "https://elsewhere.example",
+      "sec-fetch-site": "cross-site"
+    }))).toBe(false);
+    expect(sameOriginConsentPost(new Headers({
+      "origin": "null", "sec-fetch-site": "cross-site"
+    }))).toBe(false);
+    expect(sameOriginConsentPost(new Headers({
+      "referer": "https://lookout-eosin.vercel.app.attacker.example/authorize"
+    }))).toBe(false);
+    expect(sameOriginConsentPost(new Headers())).toBe(false);
+  });
   const clientId = "https://chatgpt.com/oauth/client.json";
   const redirect = "https://chatgpt.com/oauth/callback";
   const challenge = createHash("sha256").update("A".repeat(64)).digest("base64url");

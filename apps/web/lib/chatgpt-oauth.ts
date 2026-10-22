@@ -88,3 +88,21 @@ export function oauthRedirect(uri: string, params: Record<string, string>) {
 }
 
 export const NO_STORE = { "Cache-Control": "no-store", "Pragma": "no-cache" };
+
+/**
+ * Browser consent forms can omit Origin (for example under restrictive
+ * referrer policies). Accept only browser-verified same-origin context.
+ * The signed, short-lived consent payload is checked separately.
+ */
+export function sameOriginConsentPost(headers: Headers): boolean {
+  const origin = headers.get("origin");
+  const fetchSite = headers.get("sec-fetch-site");
+  if (fetchSite && fetchSite !== "same-origin") return false;
+  if (origin && origin !== "null" && origin !== ISSUER) return false;
+  if (origin === ISSUER) return true;
+  if (fetchSite === "same-origin") return true;
+  const referer = headers.get("referer");
+  if (!referer) return false;
+  try { return new URL(referer).origin === ISSUER; }
+  catch { return false; }
+}

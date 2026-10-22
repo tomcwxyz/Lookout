@@ -58,5 +58,10 @@ describe("personal OAuth consent", () => {
     expect(location.searchParams.get("state")).toBe("sample-state");
     expect(location.searchParams.get("iss")).toBe(ISSUER);
     expect(location.searchParams.get("code")).toMatch(/^lk_oac_/);
+    const withoutOrigin = await POST(req(ISSUER + "/oauth/authorize", {
+      method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded",
+        "Sec-Fetch-Site": "same-origin" }, body
+    }));
+    expect(withoutOrigin.status).toBe(303);
   });
 });
