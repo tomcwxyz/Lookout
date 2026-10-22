@@ -1,6 +1,6 @@
 # Lookout architecture
 
-_Updated 21 October 2026._
+_Updated 22 October 2026._
 
 ## Principle
 
@@ -17,7 +17,7 @@ Sources provide observations; pure rules interpret bounded evidence; AI can expl
 
 ## Evidence and identity
 
-GitHub repository -> observed project -> sampled PRs, issues, branches, CI and plans -> deterministic work/attention suggestions. Human decisions live in a separate authoritative table. A project can link read-only infrastructure resources, with exact Vercel/Git identity when provided and explicit manual links for ambiguous relationships. One observed Git repo is not yet a logical multi-repository project.
+GitHub repository -> observed project -> sampled PRs, issues, branches, CI and plans -> deterministic work/attention suggestions. Human decisions live in a separate authoritative table. A project can link read-only infrastructure resources, with exact Vercel/Git identity when provided and explicit manual links for ambiguous relationships. Logical portfolio projects are now separate from observed repositories. Each accessible repository is inventoried quickly, then inspected in bounded rotating batches; one logical project can own multiple repository links and explicit infrastructure links. Lifecycle state is nullable until confirmed by the user and is never inferred from code activity.
 
 For agent handovers, dashboard-authenticated users issue scoped revocable bearer tokens. A coding assistant uses the bridge to fetch a limited handover, human decisions and next actions or **propose** a validated, idempotent checkpoint. Records are labelled agent-reported and do not alter human-confirmed status. No raw conversation transcript or TOPO personal memory is ingested.
 
@@ -33,6 +33,6 @@ For agent handovers, dashboard-authenticated users issue scoped revocable bearer
 
 ## Present limits
 
-The observer is limited to the newest repositories, bounded PR review/discussion samples and a small selection of conventional Markdown plan files. The dashboard presently highlights technical work signals rather than stable cross-source feature groups. There are no team roles, automatic agent lifecycle hooks, cross-provider transactional edits or destructive automations. External planning documents are not yet ingested.
+The observer inventories up to 500 accessible repositories but inspects only a bounded rotating subset per run, with bounded PR review/discussion samples and a small selection of conventional Markdown plan files. The dashboard presently highlights technical work signals rather than stable cross-source feature groups. There are no team roles, automatic agent lifecycle hooks, cross-provider transactional edits or destructive automations. External planning documents are not yet ingested.
 
 See [ROADMAP](ROADMAP.md), [SCHEDULED_SYNC](SCHEDULED_SYNC.md), [WORK_HANDOVERS](WORK_HANDOVERS.md) and [AGENT_HANDOVERS](AGENT_HANDOVERS.md).

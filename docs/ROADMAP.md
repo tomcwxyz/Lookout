@@ -1,6 +1,6 @@
 # Lookout roadmap
 
-_Reviewed 21 October 2026. Shipped means code is merged and the production deployment is READY; it does not mean every feature has been user-accepted._
+_Reviewed 22 October 2026. Shipped means code is merged and the production deployment is READY; it does not mean every feature has been user-accepted._
 
 ## Shipped foundation (alpha 0.1–0.3, in main)
 
@@ -24,7 +24,9 @@ _Reviewed 21 October 2026. Shipped means code is merged and the production deplo
 - [ ] Distinguish implemented, tested, deployed, human-accepted and tidy-up remaining with cited evidence and uncertainty.
 - [ ] Find the latest authoritative plan across supported sources and reconcile old checklists against newer implementation.
 - [ ] Make the portfolio queue actionable: deduplicate repeated branch/PR alerts, rank blockers, configurable policies, snoozing and accepted risks.
-- [ ] Expand GitHub pagination and repository coverage beyond the default 25 recently pushed repos; show coverage prominently.
+- [x] Inventory all accessible public/private GitHub repositories (default limit 500) and show explicit coverage; rotate bounded detailed inspections rather than overloading one cron.
+- [x] Add logical portfolio projects with human-confirmed lifecycle states, optional notes, manual projects and many-to-one repository association.
+- [x] Allow explicit Neon/Vercel associations with logical projects, even when no GitHub repository exists.
 - [ ] Add historical observation deltas and persistent change-oriented briefings beyond the current bounded per-project timeline.
 
 ## Next: safer and broader evidence
