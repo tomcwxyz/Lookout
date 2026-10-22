@@ -1,5 +1,6 @@
 import { createHash, timingSafeEqual } from "node:crypto";
-import { authoriseAgentToken } from "@lookout/db";
+import { authoriseAgentToken, authoriseOAuthAccessToken } from "@lookout/db";
+import { RESOURCE } from "./chatgpt-oauth";
 
 export type HostedMcpIdentity =
   | { scope: "owner" }
@@ -24,6 +25,9 @@ export async function authoriseHostedMcp(
   const raw = mcpBearer(header);
   if (!raw) return null;
   if (ownerTokenMatches(raw, secret)) return { scope: "owner" };
+  if (raw.startsWith("lk_oat_")) {
+    return await authoriseOAuthAccessToken(raw, RESOURCE) ? { scope: "owner" } : null;
+  }
   if (!raw.startsWith("lkp_")) return null;
   const agent = await authoriseAgentToken(raw);
   return agent ? { scope: "project", projectId: agent.projectId } : null;

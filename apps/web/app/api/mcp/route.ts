@@ -10,7 +10,7 @@ export const maxDuration = 30;
 const noStore = { "Cache-Control": "no-store" };
 const unauthorised = () => new Response(JSON.stringify({ error: "Lookout MCP authentication required" }), {
   status: 401, headers: { ...noStore, "Content-Type": "application/json",
-    "WWW-Authenticate": 'Bearer realm="Lookout MCP"' }
+    "WWW-Authenticate": 'Bearer realm="Lookout MCP", resource_metadata="https://lookout-eosin.vercel.app/.well-known/oauth-protected-resource"' }
 });
 
 /** Stateless, read-only Streamable HTTP MCP. Every request gets its own verified identity. */

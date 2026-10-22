@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export function middleware(request: NextRequest) {
+  // OAuth discovery and token exchange are public; consent still requires dashboard Basic auth.
+  if (/^\/\.well-known\/oauth-(?:protected-resource|authorization-server)(?:\/api\/mcp)?\/?$/.test(request.nextUrl.pathname)
+    || request.nextUrl.pathname === "/oauth/token") return NextResponse.next();
   // Hosted MCP verifies its own personal or project-scoped Bearer token.
   if (request.nextUrl.pathname === "/api/mcp" || request.nextUrl.pathname === "/api/mcp/") {
     return NextResponse.next();
