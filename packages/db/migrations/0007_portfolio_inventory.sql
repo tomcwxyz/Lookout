@@ -54,3 +54,12 @@ INSERT INTO portfolio_repository_links (repository_provider_id, portfolio_projec
 SELECT p.provider_id, pp.id FROM projects p
 JOIN portfolio_projects pp ON pp.legacy_project_id = p.id WHERE true
 ON CONFLICT (repository_provider_id) DO NOTHING;
+
+-- Infrastructure can be explicitly associated with a logical project, even
+-- when the project has no GitHub repository.
+CREATE TABLE IF NOT EXISTS portfolio_infrastructure_links (
+  resource_key text PRIMARY KEY REFERENCES infrastructure_resources(key) ON DELETE CASCADE,
+  portfolio_project_id integer NOT NULL REFERENCES portfolio_projects(id) ON DELETE CASCADE,
+  linked_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS portfolio_infra_project_idx ON portfolio_infrastructure_links(portfolio_project_id);

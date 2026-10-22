@@ -1,7 +1,8 @@
 import { and, eq, desc, inArray } from "drizzle-orm";
 import { getDatabase } from "./client";
 import { projects } from "./schema";
-import { githubScanState, portfolioProjects, portfolioRepositoryLinks, repositoryInventory } from "./portfolio-schema";
+import { infrastructureResources } from "./infrastructure-schema";
+import { githubScanState, portfolioProjects, portfolioRepositoryLinks, portfolioInfrastructureLinks, repositoryInventory } from "./portfolio-schema";
 
 export const confirmedProjectStatuses = ["exploring", "building", "testing", "live", "maintaining", "paused", "archived"] as const;
 export type ConfirmedProjectStatus = typeof confirmedProjectStatuses[number];
@@ -63,13 +64,15 @@ export async function markRepositoryInspected(providerId: string, error?: string
 /** A logical project may have zero, one or multiple GitHub repositories. */
 export async function getLogicalPortfolio() {
   const db = getDatabase();
-  const [logical, links, inventory, observed, scan] = await Promise.all([
+  const [logical, links, inventory, observed, scan, infrastructure, explicitInfra] = await Promise.all([
     db.select().from(portfolioProjects).orderBy(desc(portfolioProjects.updatedAt)),
     db.select().from(portfolioRepositoryLinks),
     db.select().from(repositoryInventory),
     db.select({ id: projects.id, providerId: projects.providerId, observedAt: projects.observedAt })
       .from(projects),
-    db.select().from(githubScanState).where(eq(githubScanState.id, 1)).limit(1)
+    db.select().from(githubScanState).where(eq(githubScanState.id, 1)).limit(1),
+    db.select().from(infrastructureResources),
+    db.select().from(portfolioInfrastructureLinks)
   ]);
   const reposById = new Map(inventory.map(r => [r.providerId, r]));
   const observedById = new Map(observed.map(r => [r.providerId, r]));
@@ -84,8 +87,25 @@ export async function getLogicalPortfolio() {
     list.push(entry);
     repositoriesByProject.set(link.portfolioProjectId, list);
   }
+  const explicitInfraByKey = new Map(explicitInfra.map(link => [link.resourceKey, link.portfolioProjectId]));
+  const logicalByObservationId = new Map<number, number>();
+  for (const link of links) {
+    const observationId = observedById.get(link.repositoryProviderId)?.id;
+    if (observationId) logicalByObservationId.set(observationId, link.portfolioProjectId);
+  }
+  const infrastructureByProject = new Map<number, Array<{ key: string; name: string; provider: string; kind: string; url: string; observedAt: Date; linkMethod: string }>>();
+  for (const resource of infrastructure) {
+    const explicit = explicitInfraByKey.get(resource.key);
+    const ownerId = explicit ?? (resource.projectId ? logicalByObservationId.get(resource.projectId) : undefined);
+    if (!ownerId) continue;
+    const list = infrastructureByProject.get(ownerId) ?? [];
+    list.push({ key: resource.key, name: resource.name, provider: resource.provider, kind: resource.kind,
+      url: resource.url, observedAt: resource.observedAt, linkMethod: explicit ? "manual" : "linked_repository" });
+    infrastructureByProject.set(ownerId, list);
+  }
   const projectRows = logical.map(p => ({
-    ...p, repositories: (repositoriesByProject.get(p.id) ?? []).map(r => ({
+    ...p, infrastructure: infrastructureByProject.get(p.id) ?? [],
+    repositories: (repositoriesByProject.get(p.id) ?? []).map(r => ({
       ...r, repositoryObservationId: observedById.get(r.providerId)?.id ?? null,
       observedAt: observedById.get(r.providerId)?.observedAt ?? null
     }))
@@ -139,4 +159,31 @@ export async function assignRepositoryToProject(providerId: string, portfolioId:
     }).onConflictDoUpdate({ target: portfolioRepositoryLinks.repositoryProviderId,
       set: { portfolioProjectId: portfolioId, linkedAt: new Date() } });
   });
+}
+
+/** Manual infrastructure links override inherited repository matches without changing source data. */
+export async function assignInfrastructureToProject(resourceKey: string, portfolioId: number) {
+  if (!/^(neon|vercel):/.test(resourceKey) || resourceKey.length > 250
+    || !Number.isSafeInteger(portfolioId) || portfolioId < 1) throw new Error("Invalid association");
+  const db = getDatabase();
+  await db.transaction(async tx => {
+    const [resource] = await tx.select({ key: infrastructureResources.key }).from(infrastructureResources)
+      .where(eq(infrastructureResources.key, resourceKey)).limit(1);
+    const [project] = await tx.select({ id: portfolioProjects.id }).from(portfolioProjects)
+      .where(eq(portfolioProjects.id, portfolioId)).limit(1);
+    if (!resource || !project) throw new Error("Unknown infrastructure resource or project");
+    await tx.insert(portfolioInfrastructureLinks).values({ resourceKey, portfolioProjectId: portfolioId })
+      .onConflictDoUpdate({ target: portfolioInfrastructureLinks.resourceKey,
+        set: { portfolioProjectId: portfolioId, linkedAt: new Date() } });
+  });
+}
+export async function getUnassignedInfrastructure() {
+  const db = getDatabase();
+  const [resources, explicit] = await Promise.all([
+    db.select({ key: infrastructureResources.key, name: infrastructureResources.name,
+      provider: infrastructureResources.provider, kind: infrastructureResources.kind }).from(infrastructureResources),
+    db.select().from(portfolioInfrastructureLinks)
+  ]);
+  const assigned = new Set(explicit.map(x => x.resourceKey));
+  return resources.filter(r => !assigned.has(r.key));
 }

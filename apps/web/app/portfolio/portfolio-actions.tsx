@@ -105,3 +105,33 @@ export function AssignRepository({ portfolioId, repositories }: {
     {error && <small role="alert" className="form-error">{error}</small>}
   </form>;
 }
+
+export function AssignInfrastructure({ portfolioId, resources }: {
+  portfolioId: number; resources: Array<{ key: string; name: string; provider: string; kind: string }>;
+}) {
+  const router = useRouter();
+  const [selection, setSelection] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  async function submit(event: React.FormEvent) {
+    event.preventDefault(); setBusy(true); setError("");
+    try {
+      await requestJson("/api/portfolio/infrastructure/assign", "POST", {
+        resourceKey: selection, portfolioProjectId: portfolioId
+      });
+      setSelection(""); router.refresh();
+    } catch (e) { setError(e instanceof Error ? e.message : "Could not link infrastructure"); }
+    finally { setBusy(false); }
+  }
+  return <form className="portfolio-form" onSubmit={submit}>
+    <label htmlFor="infra-assignment">Associate a Neon or Vercel resource</label>
+    <div className="portfolio-form-row">
+      <select id="infra-assignment" required value={selection} onChange={e => setSelection(e.target.value)}>
+        <option value="">Choose an observed resource…</option>
+        {resources.map(r => <option value={r.key} key={r.key}>{r.provider} · {r.name} ({r.kind})</option>)}
+      </select>
+      <button disabled={!selection || busy}>{busy ? "Linking…" : "Link resource"}</button>
+    </div>
+    {error && <small role="alert" className="form-error">{error}</small>}
+  </form>;
+}

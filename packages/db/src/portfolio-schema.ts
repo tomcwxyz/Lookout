@@ -39,3 +39,9 @@ export const githubScanState = pgTable("github_scan_state", {
   lastInventoryAt: timestamp("last_inventory_at", { withTimezone: true }),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull()
 });
+
+export const portfolioInfrastructureLinks = pgTable("portfolio_infrastructure_links", {
+  resourceKey: text("resource_key").primaryKey(),
+  portfolioProjectId: integer("portfolio_project_id").notNull().references(() => portfolioProjects.id, { onDelete: "cascade" }),
+  linkedAt: timestamp("linked_at", { withTimezone: true }).defaultNow().notNull()
+}, t => [index("portfolio_infra_project_idx").on(t.portfolioProjectId)]);

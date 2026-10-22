@@ -23,6 +23,6 @@ export type { OAuthCode } from "./oauth-repository";
 export {
   saveRepositoryInventory, getGithubScanOffset, advanceGithubScanOffset, markRepositoryInspected,
   getLogicalPortfolio, getLogicalProject, createLogicalProject, confirmLogicalProject,
-  assignRepositoryToProject, confirmedProjectStatuses
+  assignRepositoryToProject, assignInfrastructureToProject, getUnassignedInfrastructure, confirmedProjectStatuses
 } from "./portfolio-repository";
 export type { DiscoveredRepository, ConfirmedProjectStatus } from "./portfolio-repository";

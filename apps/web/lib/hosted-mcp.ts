@@ -58,7 +58,7 @@ export function createHostedMcpServer(identity: HostedMcpIdentity) {
       projects: data.projects.slice(0, 300).map(p => ({
         portfolioId: p.id, name: p.name, description: p.description,
         confirmedStatus: p.status, confirmedStatusNote: p.statusNote,
-        statusConfirmedAt: p.statusConfirmedAt,
+        statusConfirmedAt: p.statusConfirmedAt, infrastructureCount: p.infrastructure.length,
         statusSource: p.status ? "human_confirmed" : "unconfirmed",
         repositories: p.repositories.map(r => ({
           slug: r.slug, url: r.url, visibility: r.visibility,
