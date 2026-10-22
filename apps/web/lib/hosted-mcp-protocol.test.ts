@@ -37,7 +37,10 @@ describe("hosted MCP handshake", () => {
         }) as NextRequest;
         Object.defineProperty(req, "nextUrl", { value: new URL(url) });
         const response = await POST(req);
-        return { status: response.status, body: await response.json() };
+        const raw = await response.text();
+        const dataLine = raw.split("\n").find(line => line.startsWith("data: "));
+        const body = JSON.parse(dataLine ? dataLine.slice(6) : raw);
+        return { status: response.status, body };
       }
       const init = await send("initialize", {
         protocolVersion: "2025-06-18", capabilities: {},
