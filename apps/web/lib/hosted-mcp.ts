@@ -197,7 +197,7 @@ export function createHostedMcpServer(identity: HostedMcpIdentity) {
     }, async input => {
       try {
         return result(await submitAgentContribution(identity.projectId,
-          (await import("@lookout/db")).authoriseAgentToken ? 0 : 0, input));
+          identity.tokenId, input));
       } catch (error) {
         return failure(error instanceof ContributionConflictError ? "Conflicting event ID"
           : error instanceof ContributionRateLimitError ? "Contribution rate limit reached"
