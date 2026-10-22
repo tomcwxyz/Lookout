@@ -103,3 +103,6 @@ export type { PullRequestContext } from "./pr-context";
 
 export { parseCheckpoint, checkpointNextStep } from "./checkpoint";
 export type { CheckpointInput, CheckpointEntry } from "./checkpoint";
+
+export { parseContribution, contributionKinds } from "./contribution";
+export type { AgentContributionInput, ContributionKind } from "./contribution";
