@@ -49,3 +49,7 @@ The implementation is `apps/mcp/src/index.ts`. It accesses the same Lookout data
 Do not expose the local MCP process or its database connection to the public internet. Its optional `capture_idea` writes to **Lookout's own** database, not provider repositories/databases.
 
 See [AGENT_HANDOVERS](AGENT_HANDOVERS.md) for checkpoint semantics and [PUBLISH_MCP](PUBLISH_MCP.md) for npm release instructions.
+
+## 3. Hosted read-only HTTP MCP (personal pilot)
+
+For browser-based and remote MCP clients, the HTTPS endpoint `/api/mcp` provides a private read-only portfolio interface. It uses a separate `LOOKOUT_MCP_OWNER_TOKEN` (set on Vercel) or an existing project-scoped agent token. See [HOSTED_MCP](HOSTED_MCP.md) for setup, security and plan limitations. This is not an OAuth connection yet.
