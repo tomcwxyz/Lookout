@@ -8,7 +8,9 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const htmlHeaders = { ...NO_STORE, "Content-Type": "text/html; charset=utf-8",
-  "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'",
+  // Chrome enforces form-action across 303 redirects. Permit only Lookout and the
+  // verified ChatGPT callback origin; the callback URI itself is metadata-validated.
+  "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; form-action 'self' https://chatgpt.com; frame-ancestors 'none'; base-uri 'none'",
   "X-Content-Type-Options": "nosniff", "Referrer-Policy": "origin" };
 
 function error(message: string, status = 400) {
