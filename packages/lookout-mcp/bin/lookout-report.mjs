@@ -10,7 +10,7 @@ if (!args[0] || args.length > 3 || (args.length > 1 && args[1] !== "--kind") || 
   usage();
 } else {
   try {
-    const api = process.env.LOOKOUT_API_URL?.replace(/\\/+$/, "");
+    const api = process.env.LOOKOUT_API_URL?.replace(/\/+$/, "");
     const token = process.env.LOOKOUT_API_TOKEN;
     if (!api || !token) throw new Error("LOOKOUT_API_URL and LOOKOUT_API_TOKEN are required");
     const url = new URL(api);
@@ -44,7 +44,7 @@ if (!args[0] || args.length > 3 || (args.length > 1 && args[1] !== "--kind") || 
     const result = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error("Lookout rejected contribution (HTTP " + response.status + "): " +
       (typeof result.error === "string" ? result.error : "Unknown error"));
-    process.stdout.write(JSON.stringify(result) + "\\n");
+    process.stdout.write(JSON.stringify(result) + "\n");
   } catch (error) {
     console.error(error instanceof Error ? error.message : "Report failed");
     process.exitCode = 1;
