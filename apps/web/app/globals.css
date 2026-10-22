@@ -249,3 +249,21 @@ h1,h2,h3,p { margin-top:0; }
 .agent-setup-command{display:block;width:100%;white-space:pre-wrap;overflow-wrap:anywhere;padding:14px;background:#f6f7f4;border-radius:8px;line-height:1.6}
 .agent-manage{margin-top:22px;border-top:1px solid #e4eee6;padding-top:15px}
 .agent-manage summary{cursor:pointer;font-size:12px;font-weight:700}
+
+/* First-class portfolio editing: kept visually distinct from observed repository signals. */
+.portfolio-create,.portfolio-directory,.portfolio-edit { margin:24px 0; }
+.portfolio-form { display:grid; gap:12px; padding:24px; }
+.portfolio-form label { font-size:12px; font-weight:700; color:#436a57; }
+.portfolio-form input,.portfolio-form textarea,.portfolio-form select {
+  min-width:0; width:100%; border:1px solid #d4e4da; background:#fff;
+  padding:11px 13px; border-radius:8px; font:inherit; font-size:13px; color:#264c39;
+}
+.portfolio-form-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+.portfolio-form-row input,.portfolio-form-row select { flex:1 1 180px; }
+.portfolio-form button { background:#235848; color:white; padding:12px 17px;
+  border:0; border-radius:8px; font-weight:700; cursor:pointer; }
+.portfolio-form button:disabled { opacity:.55; cursor:default; }
+.portfolio-form .muted { font-size:11px; line-height:1.6; margin:0; }
+.portfolio-directory .project-row { align-items:center; }
+.portfolio-directory .project-body > span { max-width:60ch; }
+@media(max-width:720px) { .portfolio-form-row { flex-direction:column; align-items:stretch; } }
