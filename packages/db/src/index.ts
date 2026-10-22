@@ -28,4 +28,4 @@ export {
 export type { DiscoveredRepository, ConfirmedProjectStatus } from "./portfolio-repository";
 
 export { submitAgentContribution, listPortfolioContributions, getPortfolioIdForObservedProject,
-  getPortfolioContributionHandover, ContributionConflictError, ContributionScopeError } from "./contribution-repository";
+  getPortfolioContributionHandover, ContributionConflictError, ContributionScopeError, ContributionRateLimitError } from "./contribution-repository";

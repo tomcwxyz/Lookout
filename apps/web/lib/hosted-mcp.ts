@@ -3,7 +3,10 @@ import * as z from "zod/v4";
 import { deriveWorkHandover } from "@lookout/core";
 import {
   getAgentHandover, getInfrastructurePortfolio, getLinkedResources,
-  getPortfolio, getProject, getLogicalPortfolio
+  getPortfolio, getProject, getLogicalPortfolio,
+  getPortfolioIdForObservedProject, getPortfolioContributionHandover,
+  listPortfolioContributions, submitAgentContribution, ContributionConflictError,
+  ContributionScopeError, ContributionRateLimitError
 } from "@lookout/db";
 import type { HostedMcpIdentity } from "./hosted-mcp-auth";
 
@@ -143,9 +146,66 @@ export function createHostedMcpServer(identity: HostedMcpIdentity) {
   }, async ({ projectId }) => {
     const id = authorisedProject(identity, projectId);
     if (!id) return failure("Project ID required or not authorised for this connection.");
-    const data = await getAgentHandover(id);
-    return data ? result(data) : failure("Project not found.");
+    const [data, logical] = await Promise.all([
+      getAgentHandover(id), getPortfolioContributionHandover(id)
+    ]);
+    return data ? result({
+      ...data, logicalProject: logical?.project ?? null,
+      latestContributions: logical?.contributions ?? [],
+      trustNote: "Agent contributions and checkpoints are self-reports; human decisions remain authoritative."
+    }) : failure("Project not found.");
   });
+
+  server.registerTool("lookout_list_contributions", {
+    description: "Read attributed, self-reported agent progress, evidence, blockers and handovers. Owner may supply a logical portfolio ID; a scoped coding agent sees only reports from its own repository.",
+    inputSchema: z.object({ portfolioId: z.number().int().positive().optional() }), annotations: readOnly
+  }, async ({ portfolioId }) => {
+    if (identity.scope === "owner") {
+      if (!portfolioId) return failure("A logical portfolio ID is required.");
+      return result({ portfolioId, contributions: await listPortfolioContributions(portfolioId, 40),
+        trustNote: "Agent reports are unverified claims, not human acceptance or CI verification." });
+    }
+    const id = await getPortfolioIdForObservedProject(identity.projectId);
+    if (!id || (portfolioId && portfolioId !== id)) return failure("Project not authorised.");
+    return result({ portfolioId: id, contributions: await listPortfolioContributions(id, 40, identity.projectId),
+      trustNote: "Agent reports are unverified claims, not human acceptance or CI verification." });
+  });
+
+  // Only repository-scoped coding-agent tokens can write. Owner/ChatGPT OAuth
+  // connections remain read-only, including their tool inventory.
+  if (identity.scope === "project") {
+    server.registerTool("lookout_submit_contribution", {
+      description: "Append a project-scoped agent report: progress, evidence, blocker, handover or proposed next action. Every statement is attributed and unverified; this cannot change confirmed project status or decisions. Use a stable unique eventId and never include credentials or transcripts.",
+      inputSchema: z.object({
+        kind: z.enum(["progress", "evidence", "blocker", "handover", "next_action"]),
+        checkpoint: z.object({
+          version: z.literal(1), eventId: z.string().min(6).max(120),
+          agent: z.string().min(1).max(80), title: z.string().min(1).max(180),
+          objective: z.string().min(1).max(1000), summary: z.string().min(1).max(2500),
+          branch: z.string().max(200).optional(), commitSha: z.string().max(64).optional(),
+          prUrl: z.string().url().optional(),
+          implemented: z.array(z.string().max(300)).max(12),
+          remaining: z.array(z.string().max(300)).max(12),
+          tests: z.array(z.object({ description: z.string().max(300),
+            result: z.enum(["passed_claimed", "failed_claimed", "not_run", "needs_human"]) })).max(12),
+          decisions: z.array(z.string().max(300)).max(10),
+          blockers: z.array(z.string().max(300)).max(10),
+          capturedAt: z.string().optional()
+        })
+      }),
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false }
+    }, async input => {
+      try {
+        return result(await submitAgentContribution(identity.projectId,
+          (await import("@lookout/db")).authoriseAgentToken ? 0 : 0, input));
+      } catch (error) {
+        return failure(error instanceof ContributionConflictError ? "Conflicting event ID"
+          : error instanceof ContributionRateLimitError ? "Contribution rate limit reached"
+          : error instanceof ContributionScopeError ? "Project not authorised"
+          : "Contribution rejected");
+      }
+    });
+  }
 
   server.registerTool("lookout_get_next_actions", {
     description: "Read proposed next actions across the portfolio or for one project, with evidence URLs and any human-confirmed status. No changes are made.",
