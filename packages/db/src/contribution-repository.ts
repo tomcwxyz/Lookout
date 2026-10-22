@@ -30,7 +30,7 @@ export async function submitAgentContribution(observedProjectId: number, tokenId
   const contribution = parseContribution(input);
   const serialised = JSON.stringify(contribution);
   // Avoid collecting common credential formats in agent-written project memory.
-  if (/-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|postgres(?:ql)?:\\/\\/[^\\s]+@|(?:gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,}|sk-[A-Za-z0-9_-]{30,})/i.test(serialised))
+  if (/-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|postgres(?:ql)?:\/\/[^\s]+@|(?:gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,}|sk-[A-Za-z0-9_-]{30,})/i.test(serialised))
     throw new Error("Contribution appears to contain a credential");
   const hash = createHash("sha256").update(serialised).digest("hex");
   const db = getDatabase();
