@@ -54,6 +54,7 @@ export default async function Home() {
           <Link href="/" className="nav-link active"><span>▦</span> Overview</Link>
           <a href="#attention" className="nav-link"><span>◇</span> Attention inbox <span className="nav-count">{items.length}</span></a>
           <a href="#projects" className="nav-link"><span>⌁</span> Projects</a>
+          <Link href="/connections" className="nav-link"><span>⌘</span> Web chat connection</Link>
           <Link href="/infrastructure" className="nav-link"><span>♧</span> Infrastructure {infraAttention > 0 && <span className="nav-count">{infraAttention}</span>}</Link>
         </nav>
         <div className="sidebar-bottom"><div className="pulse-dot" /> Observation mode <span className="muted">· Sources read-only</span></div>
