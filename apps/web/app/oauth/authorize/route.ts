@@ -2,14 +2,14 @@ import { createOAuthCode } from "@lookout/db";
 import type { NextRequest } from "next/server";
 import {
   ISSUER, NO_STORE, escapeHtml, oauthRedirect, signConsent, validateAuthorizationParams,
-  validateChatGPTClient, verifyConsent
+  validateChatGPTClient, verifyConsent, sameOriginConsentPost
 } from "../../../lib/chatgpt-oauth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const htmlHeaders = { ...NO_STORE, "Content-Type": "text/html; charset=utf-8",
   "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'",
-  "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer" };
+  "X-Content-Type-Options": "nosniff", "Referrer-Policy": "origin" };
 
 function error(message: string, status = 400) {
   return new Response(message, { status, headers: NO_STORE });
@@ -50,7 +50,7 @@ Access tokens expire after one hour and can be refreshed for up to 30 days.</p>
 }
 
 export async function POST(request: NextRequest) {
-  if (request.headers.get("origin") !== ISSUER) return error("Invalid request origin", 403);
+  if (!sameOriginConsentPost(request.headers)) return error("Invalid request origin", 403);
   if (!request.headers.get("content-type")?.startsWith("application/x-www-form-urlencoded"))
     return error("Invalid form", 415);
   if (Number(request.headers.get("content-length") ?? 0) > 12000)
