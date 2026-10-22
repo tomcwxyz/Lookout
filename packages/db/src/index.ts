@@ -19,3 +19,10 @@ export {
   authoriseOAuthAccessToken, verifyPKCE, revokeAllOAuthTokens
 } from "./oauth-repository";
 export type { OAuthCode } from "./oauth-repository";
+
+export {
+  saveRepositoryInventory, getGithubScanOffset, advanceGithubScanOffset, markRepositoryInspected,
+  getLogicalPortfolio, getLogicalProject, createLogicalProject, confirmLogicalProject,
+  assignRepositoryToProject, confirmedProjectStatuses
+} from "./portfolio-repository";
+export type { DiscoveredRepository, ConfirmedProjectStatus } from "./portfolio-repository";
