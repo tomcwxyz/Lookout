@@ -29,11 +29,40 @@ Raw protocol initialization example (send as authenticated POST with `Accept: ap
 {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"manual-test","version":"1"}}}
 ```
 
-## Connecting to ChatGPT
+## Connecting to ChatGPT via OAuth (personal pilot)
 
-ChatGPT custom MCP access depends on the account and workspace. This pilot uses a **fixed Bearer credential**, not OAuth. Some ChatGPT connection flows require OAuth 2.1 and will not accept a fixed API key. Do not disable authentication or place credentials in URLs as a workaround.
+ChatGPT's custom MCP plugin uses OAuth 2.1 rather than a custom Bearer
+credential. Lookout now implements OAuth discovery, authorisation code with
+S256 PKCE, consent, one-hour access tokens and rotating refresh tokens (30-day
+lifetime). ChatGPT can use its Client ID Metadata Document (CIMD); only
+ChatGPT-hosted clients and verified redirect URIs are allowed in this pilot.
 
-If a custom MCP connection supports fixed Bearer credentials, use the endpoint above and supply the credential in its secure authentication field. Otherwise OAuth 2.1 (PKCE, refresh tokens and consent) is a separate next phase. MCP Inspector and other HTTP clients can still test the pilot.
+1. In ChatGPT Plugins choose **Add custom MCP server**.
+2. Name it **Lookout** and enter the Server URL
+   `https://lookout-eosin.vercel.app/api/mcp`.
+3. Choose **OAuth** and accept the risk acknowledgement.
+4. When prompted to authorise, use your Lookout dashboard Basic-auth
+   credentials (username `lookout`, password from your existing dashboard).
+5. Review the read-only consent screen and select **Allow read-only access**.
+6. Install the resulting plugin and test with `@Lookout` in a new chat.
+
+ChatGPT does **not** need `LOOKOUT_MCP_OWNER_TOKEN`. Keep that secret for
+compatible non-OAuth MCP clients. Never choose "No authentication" for the
+personal portfolio.
+
+**OAuth implementation:** The server publishes
+`/.well-known/oauth-protected-resource` and
+`/.well-known/oauth-authorization-server`; access and refresh tokens are
+stored as SHA-256 fingerprints in the Lookout-owned Neon database, not in
+ChatGPT. OAuth scopes are `lookout:read offline_access`; every tool is
+read-only. Existing project-scoped agent tokens remain restricted.
+
+**Pilot limitations:** One dashboard owner; no independent user accounts.
+The Basic-auth password is used to confirm consent. To disconnect OAuth
+sessions immediately, revoke their stored records in Lookout's OAuth tables;
+changing the separate owner Bearer token does not revoke OAuth sessions.
+For general public use, adopt a managed OAuth identity provider and
+per-user permissions.
 
 ## Tools (all read-only)
 
