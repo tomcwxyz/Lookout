@@ -14,6 +14,10 @@ export default function Connections() {
         <p>Read-only project context for browser-based AI assistants and remote MCP clients.</p>
       </div></div>
       <section className="panel detail-panel">
+        <div className="panel-heading"><h2>ChatGPT — OAuth connection</h2></div>
+        <div className="padded"><p>In ChatGPT Plugins, add a custom MCP server named Lookout. Choose <strong>Server URL</strong>, enter <code>https://lookout-eosin.vercel.app/api/mcp</code>, and select <strong>OAuth</strong>.</p><p>On first use, sign in to Lookout with your dashboard credentials and explicitly allow read-only access. ChatGPT never needs your personal Bearer token.</p></div>
+      </section>
+      <section className="panel detail-panel">
         <div className="panel-heading"><h2>Hosted MCP connection</h2>
           <span className="count-pill">{configured ? "Personal credential configured" : "Personal credential not configured"}</span>
         </div>
@@ -26,6 +30,7 @@ export default function Connections() {
       <section className="panel detail-panel">
         <div className="panel-heading"><h2>Set up your personal connection</h2></div>
         <div className="padded">
+          <p>The following is for MCP Inspector and clients that accept custom Bearer headers; ChatGPT uses the OAuth connection above.</p>
           <ol>
             <li>In Git Bash, generate a private credential: <code>openssl rand -hex 32</code></li>
             <li>Add it to the Lookout Vercel project as <code>LOOKOUT_MCP_OWNER_TOKEN</code>, for Production only.</li>
