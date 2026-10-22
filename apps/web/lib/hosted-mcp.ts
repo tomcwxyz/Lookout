@@ -3,7 +3,7 @@ import * as z from "zod/v4";
 import { deriveWorkHandover } from "@lookout/core";
 import {
   getAgentHandover, getInfrastructurePortfolio, getLinkedResources,
-  getPortfolio, getProject
+  getPortfolio, getProject, getLogicalPortfolio
 } from "@lookout/db";
 import type { HostedMcpIdentity } from "./hosted-mcp-auth";
 
@@ -46,17 +46,43 @@ export function createHostedMcpServer(identity: HostedMcpIdentity) {
     : { access: "single_project", projectId: identity.projectId, readOnly: true }));
 
   server.registerTool("lookout_list_projects", {
-    description: "List observed Lookout projects with concise summaries, evidence freshness and source links. A project token sees only its own project.",
+    description: "List logical portfolio projects, including human-confirmed lifecycle status, private/public GitHub repository links, detailed scan coverage and freshness. Owner sees full portfolio; project tokens see only their own repository.",
     inputSchema: z.object({}), annotations: readOnly
   }, async () => {
     if (identity.scope === "project") {
       const data = await getProject(identity.projectId);
       return result({ projects: data.project ? [projectSummary(data.project)] : [], scope: "project" });
     }
-    const data = await getPortfolio();
-    return result({ projects: data.projects.slice(0, 150).map(projectSummary),
-      total: data.projects.length, scope: "portfolio",
-      observedNotLive: "Data is from the latest recorded source observations." });
+    const data = await getLogicalPortfolio();
+    return result({
+      projects: data.projects.slice(0, 300).map(p => ({
+        portfolioId: p.id, name: p.name, description: p.description,
+        confirmedStatus: p.status, confirmedStatusNote: p.statusNote,
+        statusConfirmedAt: p.statusConfirmedAt,
+        statusSource: p.status ? "human_confirmed" : "unconfirmed",
+        repositories: p.repositories.map(r => ({
+          slug: r.slug, url: r.url, visibility: r.visibility,
+          repositoryObservationId: r.repositoryObservationId,
+          lastActivityAt: r.lastActivityAt, observedAt: r.observedAt,
+          detailedAt: r.detailedAt, inspectionError: r.inspectionError
+        }))
+      })),
+      total: data.projects.length, coverage: data.coverage, scope: "portfolio",
+      trustNote: "Confirmed status is user-authored, never inferred from CI or commits. GitHub observations can be stale; only repositories visible to Lookout's GitHub token appear."
+    });
+  });
+
+  server.registerTool("lookout_get_portfolio_project", {
+    description: "Get a logical portfolio project, its human-confirmed status and linked repositories. Owner-only; use portfolioId from lookout_list_projects. For detailed CI and work signals use repositoryObservationId with lookout_get_project_context.",
+    inputSchema: z.object({ portfolioId: z.number().int().positive() }), annotations: readOnly
+  }, async ({ portfolioId }) => {
+    if (identity.scope !== "owner") return failure("Personal portfolio access required.");
+    const data = await getLogicalPortfolio();
+    const project = data.projects.find(p => p.id === portfolioId);
+    return project ? result({
+      ...project, statusSource: project.status ? "human_confirmed" : "unconfirmed",
+      trustNote: "Project status is human-confirmed; repository inspection is observed evidence."
+    }) : failure("Portfolio project not found.");
   });
 
   server.registerTool("lookout_list_attention", {
