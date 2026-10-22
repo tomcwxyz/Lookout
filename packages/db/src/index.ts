@@ -13,3 +13,9 @@ export {
   createAgentToken,listAgentTokens,revokeAgentToken,authoriseAgentToken,
   submitAgentCheckpoint,listAgentCheckpoints,getAgentHandover,CheckpointConflictError
 } from "./agent-repository";
+
+export {
+  createOAuthCode, consumeOAuthCode, issueOAuthTokens, rotateOAuthRefreshToken,
+  authoriseOAuthAccessToken, verifyPKCE
+} from "./oauth-repository";
+export type { OAuthCode } from "./oauth-repository";
