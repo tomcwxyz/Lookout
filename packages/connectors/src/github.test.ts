@@ -6,6 +6,27 @@ function mockResponse(data: unknown): Response {
 }
 
 describe("GitHub observer", () => {
+  it("discovers public and private repositories beyond the old 25 limit, without inspecting them", async () => {
+    const calls: string[] = [];
+    const mockFetch = (async (url: string) => {
+      calls.push(url);
+      if (!url.includes("/user/repos?")) throw new Error("Discovery must only list repositories");
+      const page = Number(new URL(url).searchParams.get("page"));
+      if (page > 1) return mockResponse([]);
+      return mockResponse(Array.from({ length: 60 }, (_, i) => ({
+        id: i + 1, full_name: "owner/repo-" + i, name: "repo-" + i,
+        html_url: "https://github.com/owner/repo-" + i, description: null,
+        default_branch: "main", pushed_at: null, archived: false, fork: false,
+        private: i >= 35
+      })));
+    }) as typeof fetch;
+    const adapter = new GitHubAdapter({ token: "test", fetchImpl: mockFetch });
+    const inventory = await adapter.discoverInventory();
+    expect(inventory).toHaveLength(60);
+    expect(inventory.filter(r => r.visibility === "private")).toHaveLength(25);
+    expect(calls.every(url => url.includes("/user/repos?"))).toBe(true);
+  });
+
   it("returns evidence-backed branches, PRs and issue count without counting PRs as issues", async () => {
     const calls: string[] = [];
     const mockFetch = (async (url: string) => {

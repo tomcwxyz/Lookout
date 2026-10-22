@@ -9,7 +9,7 @@ export type GitHubAdapterOptions = {
   fetchImpl?: typeof fetch;
 };
 
-type Repo = {
+export type Repo = {
   id: number;
   full_name: string;
   name: string;
@@ -19,6 +19,8 @@ type Repo = {
   pushed_at: string | null;
   archived: boolean;
   fork: boolean;
+  private?: boolean;
+  visibility?: string;
 };
 type GHBranch = { name: string; commit: { sha: string } };
 type GHPr = {
@@ -53,7 +55,7 @@ export class GitHubAdapter implements SourceAdapter<ProjectSnapshot> {
     if (!options.token) throw new Error("GITHUB_TOKEN is required for read-only discovery");
     this.token = options.token;
     this.owner = options.owner;
-    this.maxRepos = Math.min(500, Math.max(1, options.maxRepos ?? 25));
+    this.maxRepos = Math.min(500, Math.max(1, options.maxRepos ?? 500));
     this.includeForks = options.includeForks ?? false;
     this.maxBranches = Math.min(100, Math.max(1, options.maxBranchesPerRepo ?? 25));
     this.http = options.fetchImpl ?? fetch;
@@ -75,7 +77,7 @@ export class GitHubAdapter implements SourceAdapter<ProjectSnapshot> {
     return await response.json() as T;
   }
 
-  private async listRepos(): Promise<Repo[]> {
+  async listRepos(): Promise<Repo[]> {
     const repos: Repo[] = [];
     for (let page = 1; repos.length < this.maxRepos; page++) {
       const path = "/user/repos?affiliation=owner,collaborator,organization_member&sort=pushed&per_page=100&page=" + page;
@@ -88,6 +90,17 @@ export class GitHubAdapter implements SourceAdapter<ProjectSnapshot> {
       if (batch.length < 100) break;
     }
     return repos;
+  }
+
+  async discoverInventory() {
+    const repos = await this.listRepos();
+    return repos.map(repo => ({
+      providerId: String(repo.id), slug: repo.full_name, name: repo.name,
+      url: repo.html_url, description: repo.description,
+      visibility: (repo.visibility === "private" || repo.private === true) ? "private" as const
+        : (repo.visibility === "public" || repo.private === false) ? "public" as const : "unknown" as const,
+      archived: repo.archived, fork: repo.fork, lastActivityAt: repo.pushed_at
+    }));
   }
 
   async discover(): Promise<ProjectSnapshot[]> {
@@ -174,21 +187,25 @@ export class GitHubAdapter implements SourceAdapter<ProjectSnapshot> {
       this.api<GHClosedPR[]>(root + "/pulls?state=closed&sort=updated&direction=desc&per_page=15").catch(() => []),
       this.readPlans(root, repo.html_url, repo.default_branch)
     ]);
+    // Branch timestamps are independent reads. Bound the parallelism to avoid
+    // serial latency across large repositories and excessive GitHub API bursts.
+    const selectedBranches = branches.slice(0, this.maxBranches);
     const gitBranches: GitBranch[] = [];
-    for (const branch of branches.slice(0, this.maxBranches)) {
-      let committedAt: string | null = null;
-      try {
-        const commit = await this.api<GHCommit>(root + "/commits/" + encodeURIComponent(branch.commit.sha));
-        committedAt = commit.commit.committer?.date ?? commit.commit.author?.date ?? null;
-      } catch {
-        // Unknown timestamp is kept unknown; never mislabel it as stale.
-      }
-      gitBranches.push({
-        name: branch.name, sha: branch.commit.sha,
-        isDefault: branch.name === repo.default_branch,
-        lastCommitAt: committedAt,
-        url: repo.html_url + "/tree/" + branch.name.split("/").map(encodeURIComponent).join("/")
-      });
+    for (let offset = 0; offset < selectedBranches.length; offset += 5) {
+      const group = await Promise.all(selectedBranches.slice(offset, offset + 5).map(async branch => {
+        let committedAt: string | null = null;
+        try {
+          const commit = await this.api<GHCommit>(root + "/commits/" + encodeURIComponent(branch.commit.sha));
+          committedAt = commit.commit.committer?.date ?? commit.commit.author?.date ?? null;
+        } catch { /* Missing commit timestamp stays unknown. */ }
+        return {
+          name: branch.name, sha: branch.commit.sha,
+          isDefault: branch.name === repo.default_branch,
+          lastCommitAt: committedAt,
+          url: repo.html_url + "/tree/" + branch.name.split("/").map(encodeURIComponent).join("/")
+        };
+      }));
+      gitBranches.push(...group);
     }
     const detailed = await Promise.all(prs.slice(0, 5).map(pr => this.inspectPullContext(root, pr)));
     const pullRequests: PullRequest[] = prs.map((pr, index) => ({
