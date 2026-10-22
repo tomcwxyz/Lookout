@@ -1,7 +1,7 @@
 import { createMcpHandler } from "@modelcontextprotocol/server";
 import type { NextRequest } from "next/server";
-import { authoriseHostedMcp } from "../../lib/hosted-mcp-auth";
-import { createHostedMcpServer } from "../../lib/hosted-mcp";
+import { authoriseHostedMcp } from "../../../lib/hosted-mcp-auth";
+import { createHostedMcpServer } from "../../../lib/hosted-mcp";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

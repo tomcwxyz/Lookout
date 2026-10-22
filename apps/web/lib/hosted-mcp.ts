@@ -128,13 +128,18 @@ export function createHostedMcpServer(identity: HostedMcpIdentity) {
   }, async ({ projectId }) => {
     const id = authorisedProject(identity, projectId);
     if (identity.scope === "project" && !id) return failure("Project not authorised.");
-    const portfolio = await getPortfolio();
-    const selected = id ? portfolio.projects.filter(p => p.id === id) : portfolio.projects;
+    const portfolio = identity.scope === "owner" ? await getPortfolio() : null;
+    const oneProject = identity.scope === "project" ? await getProject(identity.projectId) : null;
+    const selected = portfolio
+      ? (id ? portfolio.projects.filter(p => p.id === id) : portfolio.projects)
+      : (oneProject?.project ? [oneProject.project] : []);
     const actions = selected.flatMap(p => {
       const work = deriveWorkHandover(p.snapshot);
       return work.items.filter(w => !["maintenance", "marked_done", "integrated"].includes(w.stage))
         .slice(0, 3).map(w => {
-          const decision = portfolio.workDecisions.find(d => d.projectId === p.id && d.workKey === w.key);
+          const decision = portfolio
+            ? portfolio.workDecisions.find(d => d.projectId === p.id && d.workKey === w.key)
+            : oneProject?.decisions.find(d => d.workKey === w.key);
           return { projectId: p.id, project: p.name, title: w.title,
             suggestedStage: w.stage, humanStatus: decision?.status ?? null,
             humanNote: decision?.note ?? null, nextAction: w.nextAction ?? null,
