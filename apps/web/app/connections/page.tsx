@@ -15,7 +15,11 @@ export default function Connections() {
       </div></div>
       <section className="panel detail-panel">
         <div className="panel-heading"><h2>ChatGPT — OAuth connection</h2></div>
-        <div className="padded"><p>In ChatGPT Plugins, add a custom MCP server named Lookout. Choose <strong>Server URL</strong>, enter <code>https://lookout-eosin.vercel.app/api/mcp</code>, and select <strong>OAuth</strong>.</p><p>On first use, sign in to Lookout with your dashboard credentials and explicitly allow read-only access. ChatGPT never needs your personal Bearer token.</p></div>
+        <div className="padded"><p>In ChatGPT Plugins, add a custom MCP server named Lookout. Choose <strong>Server URL</strong>, enter <code>https://lookout-eosin.vercel.app/api/mcp</code>, and select <strong>OAuth</strong>.</p><p>On first use, sign in to Lookout with your dashboard credentials and explicitly allow read-only access. ChatGPT never needs your personal Bearer token.</p>
+        <form method="post" action="/api/oauth/revoke">
+          <button type="submit">Disconnect all ChatGPT OAuth sessions</button>
+        </form>
+        <p className="work-caution">This immediately invalidates OAuth access and refresh tokens. You can authorise again later.</p></div>
       </section>
       <section className="panel detail-panel">
         <div className="panel-heading"><h2>Hosted MCP connection</h2>

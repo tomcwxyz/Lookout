@@ -16,6 +16,6 @@ export {
 
 export {
   createOAuthCode, consumeOAuthCode, issueOAuthTokens, rotateOAuthRefreshToken,
-  authoriseOAuthAccessToken, verifyPKCE
+  authoriseOAuthAccessToken, verifyPKCE, revokeAllOAuthTokens
 } from "./oauth-repository";
 export type { OAuthCode } from "./oauth-repository";

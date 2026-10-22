@@ -81,3 +81,12 @@ export function verifyPKCE(verifier: string, challenge: string) {
   const digest = createHash("sha256").update(verifier).digest("base64url");
   return timingSafeEqual(Buffer.from(digest), Buffer.from(challenge));
 }
+
+/** Emergency disconnect: invalidate all OAuth codes and active sessions. */
+export async function revokeAllOAuthTokens() {
+  await getDatabase().transaction(async tx => {
+    await tx.execute(sql`DELETE FROM lookout_oauth_codes`);
+    await tx.execute(sql`DELETE FROM lookout_oauth_access_tokens`);
+    await tx.execute(sql`DELETE FROM lookout_oauth_refresh_tokens`);
+  });
+}
