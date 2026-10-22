@@ -29,6 +29,12 @@ _Reviewed 22 October 2026. Shipped means code is merged and the production deplo
 - [x] Allow explicit Neon/Vercel associations with logical projects, even when no GitHub repository exists.
 - [ ] Add historical observation deltas and persistent change-oriented briefings beyond the current bounded per-project timeline.
 
+- [x] Add categorised, append-only agent contributions linked to logical projects, with read-only owner MCP and scoped coding-agent writes.
+- [x] Add contribution timelines, a scoped REST endpoint, MCP bridge and CLI.
+- [ ] Run two-agent acceptance and reconcile reports with independent CI/deployment evidence.
+- [ ] Support projects without GitHub repositories and safe cross-repository handovers.
+- [ ] Add contradiction detection and verified evidence links.
+
 ## Next: safer and broader evidence
 
 - [ ] Verify migration file inventory against read-only **applied migration history per environment**, treating missing access as unknown.
@@ -41,7 +47,7 @@ _Reviewed 22 October 2026. Shipped means code is merged and the production deplo
 ## Known release boundaries
 
 - The GitHub evidence observer samples branches/PRs/issues and at most two Markdown plans; old unchecked plans are **not** proof that features remain unbuilt.
-- The remote MCP bridge currently has no automatic end-of-session capture; checkpoints are explicitly proposed, never accepted as fact.
+- The remote MCP bridge currently has no automatic end-of-session capture; checkpoints and contributions are proposed, never accepted as fact.
 - Human-confirmed progress exists, but a one-click automated release/cleanup workflow **does not**.
 - No application migrations are run in observed databases. The five applied Lookout migrations cover Lookout's own schema only.
 - Current dashboard authentication is single-user Basic Auth.

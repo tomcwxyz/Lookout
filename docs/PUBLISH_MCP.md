@@ -19,3 +19,7 @@ Use it with private `LOOKOUT_API_URL` and `LOOKOUT_API_TOKEN` credentials. The l
 npm versions are immutable; do not use long-lived npm automation tokens when OIDC works. Never commit connection tokens or expose them in PR descriptions/logs.
 
 **Operational acceptance remains:** connect real clients, call `lookout_get_handover`, submit and read back a checkpoint, revoke a token and verify cross-project isolation. The existence of a published package and passing smoke test does not prove real assistant integration.
+
+## Pending 0.3.0 release
+
+0.3.0 adds `lookout_submit_contribution`, `lookout_get_contributions` and the `lookout-report` CLI. Do not change the dashboard's pinned 0.2.0 command until the npm release and clean-install smoke test pass. Apply Lookout migration 0008 before deployment and verify real scoped-token reporting, read-back, revocation and cross-project denial.
