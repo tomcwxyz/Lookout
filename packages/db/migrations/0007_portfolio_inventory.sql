@@ -1,5 +1,5 @@
 -- Logical projects are separate from GitHub repository observations.
--- All additions are non-destructive; existing repository IDs and links remain stable.
+-- All additions are non-destructive. Existing repository IDs and links remain stable.
 CREATE TABLE IF NOT EXISTS portfolio_projects (
   id serial PRIMARY KEY,
   name text NOT NULL,
