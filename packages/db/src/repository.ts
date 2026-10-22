@@ -77,7 +77,7 @@ export async function createSyncRun() {
   return rows[0]!.id;
 }
 
-export async function finishSyncRun(id: number, status: "completed" | "failed", projectCount: number, error?: string) {
+export async function finishSyncRun(id: number, status: "completed" | "partial" | "failed", projectCount: number, error?: string) {
   await getDatabase().update(syncRuns).set({ status, projectCount, finishedAt: new Date(), error: error ?? null })
     .where(eq(syncRuns.id, id));
 }

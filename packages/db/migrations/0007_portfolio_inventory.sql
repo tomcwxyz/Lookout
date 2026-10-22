@@ -46,11 +46,11 @@ INSERT INTO repository_inventory (provider_id, slug, name, url, description, las
 SELECT provider_id, slug, name, url, description,
   CASE WHEN snapshot->>'lastActivityAt' ~ '^\\d{4}-\\d{2}-\\d{2}T' THEN (snapshot->>'lastActivityAt')::timestamptz ELSE NULL END,
   observed_at, observed_at
-FROM projects ON CONFLICT (provider_id) DO NOTHING;
+FROM projects WHERE true ON CONFLICT (provider_id) DO NOTHING;
 INSERT INTO portfolio_projects (name, description, legacy_project_id)
-SELECT name, description, id FROM projects
+SELECT name, description, id FROM projects WHERE true
 ON CONFLICT (legacy_project_id) DO NOTHING;
 INSERT INTO portfolio_repository_links (repository_provider_id, portfolio_project_id)
 SELECT p.provider_id, pp.id FROM projects p
-JOIN portfolio_projects pp ON pp.legacy_project_id = p.id
+JOIN portfolio_projects pp ON pp.legacy_project_id = p.id WHERE true
 ON CONFLICT (repository_provider_id) DO NOTHING;
