@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "@neondatabase/auth-ui/css";
+import { LabProviders } from "./lab-providers";
 
 export const metadata: Metadata = {
   title: "Lookout — know where everything stands",
@@ -7,5 +9,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en-GB"><body>{children}</body></html>;
+  return <html lang="en-GB"><body>{process.env.LOOKOUT_MULTIUSER_LAB==="enabled" ? <LabProviders>{children}</LabProviders> : children}</body></html>;
 }
