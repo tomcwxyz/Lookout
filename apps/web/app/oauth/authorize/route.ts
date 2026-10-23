@@ -39,7 +39,7 @@ padding:13px 20px;border-radius:9px;font:inherit;cursor:pointer}
 <h1>Connect ChatGPT to Lookout?</h1>
 <p>ChatGPT is requesting <strong>access to your observed project portfolio</strong>,
 including attention items, project handovers and infrastructure summaries.</p>
-<p>${params.scope.split(/\\s+/).includes("lookout:contribute") ? "You are also granting permission to submit attributed, unverified project reports and handovers. This cannot change confirmed project status, merge code or deploy applications." : "Read-only access. No contribution permissions requested."}</p>
+<p>${params.scope.split(/\s+/).includes("lookout:contribute") ? "You are also granting permission to submit attributed, unverified project reports and handovers. This cannot change confirmed project status, merge code or deploy applications." : "Read-only access. No contribution permissions requested."}</p>
 <p class="small">You are signed in with your existing Lookout dashboard credentials.
 Access tokens expire after one hour and can be refreshed for up to 30 days.</p>
 <form method="post" action="/oauth/authorize">
