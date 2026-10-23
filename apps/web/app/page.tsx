@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { getLookoutContext } from "../lib/auth/lookout-context";
+import { getAccountLogicalPortfolio, getAccountObservedPortfolio, getAccountInfrastructure } from "../lib/auth/lookout-data";
 import { ScanControls } from "./components/scan-controls";
 import { deriveWorkHandover } from "@lookout/core";
 import { workStageLabels, confirmedStageLabels, effectiveWorkStatus } from "./components/work-handover";
@@ -12,14 +14,16 @@ function dateLabel(value: Date | string | null | undefined) {
 }
 
 export default async function Home() {
+  const account = await getLookoutContext();
+  const organisationId = account.mode === "account" ? account.organisationId : null;
   let data: Awaited<ReturnType<typeof getPortfolio>> | null = null;
   let error: string | null = null;
   if (databaseConfigured()) {
-    try { data = await getPortfolio(); }
+    try { data = organisationId !== null ? await getAccountObservedPortfolio(organisationId) : await getPortfolio(); }
     catch { error = "Database unavailable or migration not yet applied. Check DATABASE_URL and run npm run db:migrate."; }
   }
-  const infrastructure = databaseConfigured() ? await getInfrastructurePortfolio().catch(() => null) : null;
-  const logical = databaseConfigured() ? await getLogicalPortfolio().catch(() => null) : null;
+  const infrastructure = databaseConfigured() ? await (organisationId !== null ? getAccountInfrastructure(organisationId) : getInfrastructurePortfolio()).catch(() => null) : null;
+  const logical = databaseConfigured() ? await (organisationId !== null ? getAccountLogicalPortfolio(organisationId) : getLogicalPortfolio()).catch(() => null) : null;
   const infraAttention = infrastructure?.findings.length ?? 0;
   const agentRecent = (await Promise.all((logical?.projects ?? []).map(async p => {
  const [agents,chatgpt]=await Promise.all([listPortfolioContributions(p.id,5).catch(()=>[]),listChatgptContributions(p.id).catch(()=>[])]);
@@ -54,7 +58,7 @@ export default async function Home() {
     <div className="app">
       <aside className="sidebar">
         <Link href="/" className="brand"><span className="brand-icon">◉</span><span>lookout<span className="brand-dot">.</span></span></Link>
-        <div className="side-label">WORKSPACE</div>
+        <div className="side-label">{account.mode === "account" ? account.name.toUpperCase() : "WORKSPACE"}</div>
         <nav className="nav">
           <Link href="/" className="nav-link active"><span>▦</span> Overview</Link>
           <a href="#attention" className="nav-link"><span>◇</span> Attention inbox <span className="nav-count">{items.length}</span></a>
@@ -62,13 +66,14 @@ export default async function Home() {
           <Link href="/agents" className="nav-link"><span>✦</span> Agent activity</Link>
           <Link href="/demo" className="nav-link"><span>✧</span> Explore demo</Link>
           <Link href="/connections" className="nav-link"><span>⌘</span> Web chat connection</Link>
+          {account.mode === "account" && <Link href="/lab" className="nav-link"><span>◈</span> Switch organisation</Link>}
           <Link href="/infrastructure" className="nav-link"><span>♧</span> Infrastructure {infraAttention > 0 && <span className="nav-count">{infraAttention}</span>}</Link>
         </nav>
         <div className="sidebar-bottom"><div className="pulse-dot" /> Observation mode <span className="muted">· Sources read-only</span></div>
       </aside>
 
       <main className="content">
-        <div className="topline"><span>PORTFOLIO / OVERVIEW</span><span>{data?.latestRun ? "Last synchronised " + dateLabel(data.latestRun.finishedAt ?? data.latestRun.startedAt) : "Awaiting first sync"}</span></div>
+        <div className="topline"><span>{account.mode === "account" ? account.name.toUpperCase()+" / OVERVIEW" : "PORTFOLIO / OVERVIEW"}</span><span>{data?.latestRun ? "Last synchronised " + dateLabel(data.latestRun.finishedAt ?? data.latestRun.startedAt) : "Awaiting first sync"}</span></div>
         <header className="hero dashboard-hero">
           <div><span className="eyebrow">YOUR DEVELOPMENT PORTFOLIO</span><h1>Know what needs <em>attention.</em></h1><p>A connected view of development work, reported agent progress and independently observed infrastructure. Every claim has a source.</p></div>
           <div className="hero-mark" aria-hidden="true"><div className="radar-ring ring-1" /><div className="radar-ring ring-2" /><div className="radar-ring ring-3" /><div className="radar-centre" /></div>
@@ -76,7 +81,7 @@ export default async function Home() {
 
         {(!databaseConfigured() || error) && <section className="notice"><strong>Connect your workspace</strong><p>{error ?? "Add DATABASE_URL and GITHUB_TOKEN to your .env file, apply the migration, then run the synchronisation worker. No sample data is shown as if it were real."}</p><code>npm run db:migrate &amp;&amp; npm run sync</code></section>}
 
-        <ScanControls />
+        {account.mode === "legacy" ? <ScanControls /> : <section className="scan-controls"><div className="scan-header"><div><strong>Observation sources</strong><span>Your existing linked GitHub, Neon and Vercel observations are available here. Account-scoped scanning needs its own provider connections before it can be enabled.</span></div></div></section>}
 
 <section className="dashboard-intelligence" aria-label="Portfolio intelligence">
           <div className="intelligence-heading"><div><span className="eyebrow">TODAY / YOUR WORKSPACE</span><h2>Where things stand</h2><p>Start with the decisions that need you. Agent reports are labelled as claims, not verified changes.</p></div><Link href="/portfolio">Explore all projects →</Link></div>
