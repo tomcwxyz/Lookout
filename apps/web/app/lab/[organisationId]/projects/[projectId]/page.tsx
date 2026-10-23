@@ -1,8 +1,8 @@
 import Link from "next/link";
 import {notFound,redirect} from "next/navigation";
 import {getTenantLookoutProject} from "@lookout/db";
-import {getLabIdentity} from "../../../../lib/auth/lab-server";
-import {verifiedWorkspace} from "../../../../lib/verified-workspace";
+import {getLabIdentity} from "../../../../../lib/auth/lab-server";
+import {verifiedWorkspace} from "../../../../../lib/verified-workspace";
 export const dynamic="force-dynamic";
 export default async function TenantProject({params}:{params:Promise<{organisationId:string;projectId:string}>}){
  const {organisationId:org,projectId:project}=await params;
