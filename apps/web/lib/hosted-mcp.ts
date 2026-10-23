@@ -6,7 +6,7 @@ import {
   getPortfolio, getProject, getLogicalPortfolio,
   getPortfolioIdForObservedProject, getPortfolioContributionHandover,
   listPortfolioContributions, submitAgentContribution, ContributionConflictError,
-  ContributionScopeError, ContributionRateLimitError
+  ContributionScopeError, ContributionRateLimitError, submitChatgptContribution, listChatgptContributions
 } from "@lookout/db";
 import type { HostedMcpIdentity } from "./hosted-mcp-auth";
 
@@ -156,6 +156,13 @@ export function createHostedMcpServer(identity: HostedMcpIdentity) {
     }) : failure("Project not found.");
   });
 
+  server.registerTool("lookout_list_chatgpt_contributions",{
+    description:"Read ChatGPT-authored, unverified project intelligence for a logical project; owner access only.",
+    inputSchema:z.object({portfolioId:z.number().int().positive()}),annotations:readOnly
+  },async ({portfolioId})=>identity.scope==="owner"?
+    result({portfolioId,contributions:await listChatgptContributions(portfolioId),trustNote:"ChatGPT reports are unverified."}):
+    failure("Owner access required."));
+
   server.registerTool("lookout_list_contributions", {
     description: "Read attributed, self-reported agent progress, evidence, blockers and handovers. Owner may supply a logical portfolio ID; a scoped coding agent sees only reports from its own repository.",
     inputSchema: z.object({ portfolioId: z.number().int().positive().optional() }), annotations: readOnly
@@ -170,6 +177,28 @@ export function createHostedMcpServer(identity: HostedMcpIdentity) {
     return result({ portfolioId: id, contributions: await listPortfolioContributions(id, 40, identity.projectId),
       trustNote: "Agent reports are unverified claims, not human acceptance or CI verification." });
   });
+
+  if(identity.scope==="owner" && identity.canContribute && identity.clientId){
+    server.registerTool("lookout_submit_chatgpt_contribution",{
+      description:"Append a ChatGPT-authored, unverified progress report or handover to one logical portfolio project. Does not modify project status, source code or deployments.",
+      inputSchema:z.object({portfolioId:z.number().int().positive(),
+        kind:z.enum(["progress","evidence","blocker","handover","next_action"]),
+        checkpoint:z.object({
+          version:z.literal(1),eventId:z.string().min(6).max(120),agent:z.string().min(1).max(80),
+          title:z.string().min(1).max(180),objective:z.string().min(1).max(1000),
+          summary:z.string().min(1).max(2500),branch:z.string().max(200).optional(),
+          commitSha:z.string().max(64).optional(),prUrl:z.string().url().optional(),
+          implemented:z.array(z.string().max(300)).max(12),remaining:z.array(z.string().max(300)).max(12),
+          tests:z.array(z.object({description:z.string().max(300),result:z.enum(["passed_claimed","failed_claimed","not_run","needs_human"])})).max(12),
+          decisions:z.array(z.string().max(300)).max(10),blockers:z.array(z.string().max(300)).max(10),
+          capturedAt:z.string().optional()
+        })}),
+      annotations:{readOnlyHint:false,destructiveHint:false,openWorldHint:false}
+    },async ({portfolioId,kind,checkpoint})=>{
+      try{return result(await submitChatgptContribution(portfolioId,identity.clientId!,{kind,checkpoint}));}
+      catch(error){return failure(error instanceof Error?error.message:"Contribution rejected");}
+    });
+  }
 
   // Only repository-scoped coding-agent tokens can write. Owner/ChatGPT OAuth
   // connections remain read-only, including their tool inventory.
