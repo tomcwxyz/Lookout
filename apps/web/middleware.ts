@@ -14,6 +14,8 @@ export function middleware(request: NextRequest) {
   if (/^\/api\/agent\/(?:handover|checkpoints|contributions)\/?$/.test(request.nextUrl.pathname)) {
     return NextResponse.next();
   }
+  // Lab sign-in and account screens use provider-managed sessions only when the isolated lab is explicitly enabled.
+  if (process.env.LOOKOUT_MULTIUSER_LAB === "enabled" && (/^\/auth\//.test(request.nextUrl.pathname) || /^\/api\/auth\//.test(request.nextUrl.pathname) || /^\/lab(?:\/|$)/.test(request.nextUrl.pathname))) return NextResponse.next();
   // Lab endpoints independently verify bearer sessions and tenant access.
   if (request.nextUrl.pathname.startsWith("/api/lab/")) return NextResponse.next();
   // Cron route handlers perform their own strict CRON_SECRET Bearer check.
