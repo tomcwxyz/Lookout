@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 vi.mock("@lookout/db", () => ({
-  authoriseOAuthAccessToken: vi.fn(async (raw: string) => raw === "lk_oat_" + "a".repeat(64)),
+  authoriseOAuthAccessToken: vi.fn(async (raw: string) => raw === "lk_oat_" + "a".repeat(64) ? { scope: "lookout:read", clientId: "https://chatgpt.com/oauth/client.json" } : null),
   authoriseAgentToken: vi.fn(async (raw: string) =>
     raw === "lkp_" + "a".repeat(64) ? { id: 1, projectId: 7 } : null)
 }));
@@ -26,7 +26,7 @@ describe("hosted MCP access boundaries", () => {
       .toEqual({ scope: "project", projectId: 7, tokenId: 1 });
     expect(await authoriseHostedMcp("Bearer lkp_" + "b".repeat(64), owner)).toBeNull();
     expect(await authoriseHostedMcp("Bearer " + owner.slice(1), owner)).toBeNull();
-    expect(await authoriseHostedMcp("Bearer lk_oat_" + "a".repeat(64), owner)).toEqual({ scope: "owner" });
+    expect(await authoriseHostedMcp("Bearer lk_oat_" + "a".repeat(64), owner)).toEqual({ scope: "owner", canContribute: false, clientId: "https://chatgpt.com/oauth/client.json" });
     expect(await authoriseHostedMcp("Bearer lk_oat_" + "b".repeat(64), owner)).toBeNull();
   });
 });
