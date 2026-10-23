@@ -201,6 +201,53 @@ export function createHostedMcpServer(identity: HostedMcpIdentity) {
     });
   }
 
+  // Session notes reuse the established contribution persistence and permissions.
+  // No separate tenant-unscoped endpoint or additional data store is introduced.
+  const sessionInput=z.object({
+    title:z.string().min(1).max(180),
+    eventId:z.string().min(6).max(120),
+    agent:z.string().min(1).max(80),
+    aim:z.string().min(1).max(1000),
+    done:z.array(z.string().min(1).max(300)).max(12),
+    notDone:z.array(z.string().min(1).max(300)).max(11),
+    decisions:z.array(z.string().min(1).max(300)).max(10),
+    next:z.string().min(1).max(300),
+    context:z.string().max(1500).optional(),
+    blockers:z.array(z.string().min(1).max(300)).max(10).optional()
+  });
+  const asSessionCheckpoint=(note:z.infer<typeof sessionInput>)=>({
+    version:1 as const,eventId:note.eventId,agent:note.agent,title:note.title,
+    objective:note.aim,summary:note.context?.trim()||note.aim,
+    implemented:note.done,remaining:[...note.notDone,"Next: "+note.next],
+    decisions:note.decisions,blockers:note.blockers||[],tests:[]
+  });
+  if(identity.scope==="owner" && identity.canContribute && identity.clientId){
+    server.registerTool("lookout_record_session",{
+      description:"Preferred plain-English session handover for ChatGPT. Capture what was intended, done, unfinished, decided and what to do next. Use after meaningful work, not every action. Claims remain unverified.",
+      inputSchema:sessionInput.extend({portfolioId:z.number().int().positive()}),
+      annotations:{readOnlyHint:false,destructiveHint:false,openWorldHint:false}
+    },async ({portfolioId,...note})=>{
+      try{return result(await submitChatgptContribution(portfolioId,identity.clientId!,{
+        kind:"handover",checkpoint:asSessionCheckpoint(note)
+      }));}
+      catch(error){return failure(error instanceof Error?error.message:"Session note rejected");}
+    });
+  }
+  if(identity.scope==="project"){
+    server.registerTool("lookout_record_session",{
+      description:"Preferred plain-English coding-agent session handover. Summarise meaningful work, unfinished items, decisions and next action without repeating GitHub details. Agent-reported, not verified.",
+      inputSchema:sessionInput,
+      annotations:{readOnlyHint:false,destructiveHint:false,openWorldHint:false}
+    },async note=>{
+      try{return result(await submitAgentContribution(identity.projectId,identity.tokenId,{
+        kind:"handover",checkpoint:asSessionCheckpoint(note)
+      }));}
+      catch(error){return failure(error instanceof ContributionConflictError?"Conflicting event ID"
+        :error instanceof ContributionRateLimitError?"Contribution rate limit reached"
+        :error instanceof ContributionScopeError?"Project not authorised":"Session note rejected");}
+    });
+  }
+
   // Only repository-scoped coding-agent tokens can write. Owner/ChatGPT OAuth
   // connections remain read-only, including their tool inventory.
   if (identity.scope === "project") {
