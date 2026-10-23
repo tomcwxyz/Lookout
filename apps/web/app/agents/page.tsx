@@ -1,8 +1,11 @@
 import Link from "next/link";
+import { getLookoutContext } from "../../lib/auth/lookout-context";
+import { getAccountLogicalPortfolio } from "../../lib/auth/lookout-data";
 import { databaseConfigured, getLogicalPortfolio, listPortfolioContributions, listChatgptContributions } from "@lookout/db";
 export const dynamic="force-dynamic";
 export default async function AgentsPage(){
- const portfolio=databaseConfigured()?await getLogicalPortfolio().catch(()=>null):null;
+ const account=await getLookoutContext();
+ const portfolio=databaseConfigured()?await (account.mode==="account"?getAccountLogicalPortfolio(account.organisationId):getLogicalPortfolio()).catch(()=>null):null;
  const projects=portfolio?.projects??[];
  const entries=(await Promise.all(projects.map(async p=>{
  const [agents, chatgpt]=await Promise.all([listPortfolioContributions(p.id,12).catch(()=>[]),listChatgptContributions(p.id).catch(()=>[])]);
