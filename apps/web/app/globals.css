@@ -293,3 +293,198 @@ h1,h2,h3,p { margin-top:0; }
 .nav-link:focus-visible,.intelligence-entry a:focus-visible{outline:2px solid #9cdbb4;outline-offset:3px}
 @media(max-width:920px){.intelligence-grid{grid-template-columns:1fr}}
 @media(max-width:720px){.intelligence-heading{align-items:start;flex-direction:column}.intelligence-heading h2{font-size:23px}.dashboard-hero .hero-mark{display:none}.intelligence-entry{padding:15px}.intelligence-panel .panel-heading{padding:17px}}
+
+
+/* Account access reuses the visual system of Lookout's existing dashboard.
+   Keep these styles scoped so the authenticated application remains unchanged. */
+.lookout-auth-shell {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: minmax(330px, 46%) minmax(0, 1fr);
+  background: var(--paper);
+}
+.lookout-auth-story {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: 650px;
+  padding: clamp(28px, 3.3vw, 56px);
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(155deg, #14362f 0%, #163e34 60%, #245848 100%);
+  color: #e6f1e9;
+}
+.lookout-auth-story::after {
+  content: "";
+  position: absolute;
+  width: 560px;
+  height: 560px;
+  border-radius: 50%;
+  right: -330px;
+  bottom: -340px;
+  background: radial-gradient(circle, rgba(156,219,180,.16) 0%, transparent 72%);
+  pointer-events: none;
+}
+.lookout-auth-brand, .lookout-auth-mobile-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  width: fit-content;
+  font-size: 27px;
+  font-weight: 800;
+  letter-spacing: -1.5px;
+  line-height: 1;
+}
+.lookout-auth-brand { color: #f3fbf5; }
+.lookout-auth-brand-icon { color: #9cdbb4; font-size: 34px; line-height: .7; font-weight: 400; }
+.lookout-auth-intro {
+  max-width: 530px;
+  position: relative;
+  margin: auto 0;
+  padding: 72px 0 160px;
+}
+.lookout-auth-eyebrow, .lookout-auth-access-eyebrow {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+}
+.lookout-auth-eyebrow { color: #a2d6b6; }
+.lookout-auth-intro h1 {
+  max-width: 490px;
+  margin: 21px 0;
+  font-size: clamp(40px, 4.8vw, 68px);
+  letter-spacing: -3.4px;
+  font-weight: 750;
+  line-height: 1.06;
+}
+.lookout-auth-intro h1 em {
+  color: #9cdbb4;
+  font-family: Georgia, serif;
+  font-weight: 400;
+}
+.lookout-auth-intro > p {
+  max-width: 370px;
+  color: #c2d9cb;
+  font-size: 14px;
+  line-height: 1.8;
+}
+.lookout-auth-radar {
+  position: absolute;
+  width: 192px;
+  height: 192px;
+  bottom: -25px;
+  right: clamp(10px, 5vw, 70px);
+  pointer-events: none;
+}
+.lookout-auth-ring, .lookout-auth-centre {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+}
+.lookout-auth-ring { border: 1px solid rgba(168,222,187,.32); }
+.lookout-auth-ring-one { width: 74px; height: 74px; }
+.lookout-auth-ring-two { width: 136px; height: 136px; }
+.lookout-auth-ring-three { width: 192px; height: 192px; }
+.lookout-auth-centre {
+  width: 21px;
+  height: 21px;
+  background: #9cdbb4;
+  border: 5px solid #295d4a;
+  box-shadow: 0 0 0 14px rgba(156,219,180,.1);
+}
+.lookout-auth-story-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #a9c7b6;
+  font-size: 11px;
+  margin: 0;
+}
+.lookout-auth-access {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(24px, 5vw, 64px);
+}
+.lookout-auth-access-inner { width: 100%; max-width: 460px; }
+.lookout-auth-access-eyebrow { color: #538a73; margin: 0 0 28px 4px; }
+.lookout-auth-mobile-brand { display: none; color: var(--forest); }
+.lookout-auth-access-footer {
+  text-align: center;
+  color: #819589;
+  font-size: 11px;
+  line-height: 1.7;
+  margin: 26px 0 0;
+}
+.lookout-auth-form {
+  /* Neon Auth UI 0.4 uses shadcn-style theme variables. Keep the
+     overrides local to auth, and pair foreground colours for contrast. */
+  --primary: #245d4c;
+  --primary-foreground: #fff;
+  --neon-primary: #245d4c;
+  --neon-primary-foreground: #fff;
+  --foreground: #18332f;
+  --neon-foreground: #18332f;
+  --background: #fff;
+  --neon-background: #fff;
+  --card: #fff;
+  --neon-card: #fff;
+  --card-foreground: #18332f;
+  --neon-card-foreground: #18332f;
+  --secondary: #eef5ef;
+  --neon-secondary: #eef5ef;
+  --secondary-foreground: #245d4c;
+  --neon-secondary-foreground: #245d4c;
+  --muted: #f1f6f2;
+  --neon-muted: #f1f6f2;
+  --muted-foreground: #667d70;
+  --neon-muted-foreground: #667d70;
+  --border: #dbe7de;
+  --neon-border: #dbe7de;
+  --input: #d4e4da;
+  --neon-input: #d4e4da;
+  --ring: #2f8068;
+  --neon-ring: #2f8068;
+  --radius: 12px;
+  --neon-radius: 12px;
+  color: #18332f;
+}
+.lookout-auth-form :is(input, button) { font-family: inherit; }
+.lookout-auth-form input {
+  min-height: 42px;
+  border-radius: 8px;
+}
+.lookout-auth-form input:focus-visible,
+.lookout-auth-form button:focus-visible,
+.lookout-auth-brand:focus-visible {
+  outline: 2px solid #2f8068;
+  outline-offset: 3px;
+}
+.lookout-auth-form button { border-radius: 8px; }
+.lookout-auth-form a { color: #26745b; font-weight: 650; }
+.lookout-auth-form a:hover { text-decoration: underline; }
+@media (max-width: 900px) {
+  .lookout-auth-shell { grid-template-columns: minmax(285px, 40%) minmax(0, 1fr); }
+  .lookout-auth-intro h1 { font-size: clamp(35px, 4.5vw, 48px); letter-spacing: -2px; }
+  .lookout-auth-radar { width: 135px; height: 135px; bottom: 0; right: 0; }
+  .lookout-auth-ring-one { width: 48px; height: 48px; }
+  .lookout-auth-ring-two { width: 92px; height: 92px; }
+  .lookout-auth-ring-three { width: 135px; height: 135px; }
+}
+@media (max-width: 670px) {
+  .lookout-auth-shell { display: block; min-height: 100dvh; }
+  .lookout-auth-story { display: none; }
+  .lookout-auth-access { min-height: 100dvh; align-items: center; padding: 30px 20px 42px; }
+  .lookout-auth-access-inner { max-width: 440px; }
+  .lookout-auth-mobile-brand { display: flex; margin-bottom: 42px; font-size: 25px; }
+  .lookout-auth-access-eyebrow { margin-bottom: 20px; }
+  .lookout-auth-access-footer { margin-top: 20px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lookout-auth-ring { transition: none; animation: none; }
+}
