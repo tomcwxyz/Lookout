@@ -143,8 +143,7 @@ function createServer() {
         decisions:z.array(z.string().min(1).max(300)).max(10),
         next:z.string().min(1).max(300),
         context:z.string().max(1500).optional(),
-        blockers:z.array(z.string().min(1).max(300)).max(10).optional(),
-        evidenceUrl:z.string().url().optional()
+        blockers:z.array(z.string().min(1).max(300)).max(10).optional()
       })
     }, async(note)=>{
       const checkpoint={
@@ -158,8 +157,7 @@ function createServer() {
         remaining:[...note.notDone, "Next: "+note.next].slice(0,12),
         tests:[],
         decisions:note.decisions,
-        blockers:note.blockers||[],
-        ...(note.evidenceUrl?{prUrl:note.evidenceUrl}:{})
+        blockers:note.blockers||[]
       };
       try{return result(await remote("/api/agent/checkpoints",{checkpoint}));}
       catch(err){return {isError:true,content:[{type:"text",text:String(err)}]};}
