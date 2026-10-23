@@ -37,8 +37,8 @@ export function effectiveWorkStatus(item: { key: string; stage: WorkStage }, dec
 }
 
 /** The source record and a human confirmation remain visibly distinct. */
-export function WorkHandoverPanel({ handover, decisions, projectId }: {
-  handover: WorkHandover; decisions: Decision[]; projectId: number
+export function WorkHandoverPanel({ handover, decisions, projectId, readOnly = false }: {
+  handover: WorkHandover; decisions: Decision[]; projectId: number; readOnly?: boolean
 }) {
   const items = handover.items.map(item => ({
     ...item, decision: decisions.find(d => d.workKey === item.key),
@@ -103,8 +103,8 @@ export function WorkHandoverPanel({ handover, decisions, projectId }: {
             <span className="work-entry-source">{item.evidenceType === "plan" ? "Planning document" : item.evidenceType === "issue" ? "Issue" : "Pull request"}
               {item.decision && " · Status confirmed by you"}</span>
             {item.decision?.note && <span className="work-confirmed-note">Your note: {item.decision.note}</span>}
-            <WorkDecisionControl key={item.key + ":" + (item.decision?.status ?? "")} projectId={projectId} workKey={item.key}
-              initialStatus={item.decision?.status ?? null} initialNote={item.decision?.note ?? null}/>
+            {!readOnly && <WorkDecisionControl key={item.key + ":" + (item.decision?.status ?? "")} projectId={projectId} workKey={item.key}
+              initialStatus={item.decision?.status ?? null} initialNote={item.decision?.note ?? null}/>}
           </article>
         )}</div>
         {matches.length > visible.length && <p className="work-overflow">+{matches.length - visible.length} more signals in this category</p>}
