@@ -31,3 +31,5 @@ export { submitAgentContribution, listPortfolioContributions, getPortfolioIdForO
   getPortfolioContributionHandover, ContributionConflictError, ContributionScopeError, ContributionRateLimitError } from "./contribution-repository";
 
 export { submitChatgptContribution, listChatgptContributions } from "./chatgpt-contribution-repository";
+
+export { resolveOrganisationMember, authorisedPortfolioProject, listTenantPortfolioProjects } from "./tenant-repository";
