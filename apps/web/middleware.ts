@@ -14,7 +14,9 @@ export function middleware(request: NextRequest) {
   if (/^\/api\/agent\/(?:handover|checkpoints|contributions)\/?$/.test(request.nextUrl.pathname)) {
     return NextResponse.next();
   }
-  // Lab endpoints independently verify bearer sessions and tenant access.\n  if (request.nextUrl.pathname.startsWith("/api/lab/")) return NextResponse.next();\n  // Cron route handlers perform their own strict CRON_SECRET Bearer check.
+  // Lab endpoints independently verify bearer sessions and tenant access.
+  if (request.nextUrl.pathname.startsWith("/api/lab/")) return NextResponse.next();
+  // Cron route handlers perform their own strict CRON_SECRET Bearer check.
   if (/^\/api\/cron\/(?:github|neon|vercel)\/?$/.test(request.nextUrl.pathname)) {
     return NextResponse.next();
   }
