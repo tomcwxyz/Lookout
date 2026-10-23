@@ -20,6 +20,8 @@ LOOKOUT_API_TOKEN=<private project-scoped token>
 
 Use command `npx` with arguments `-y @good-ship/lookout-mcp@0.2.0`. Avoid writing tokens into public repository files, screenshots, CI logs or shell history.
 
+**Writing guidance:** the contribution should be a short, plain-English session note explaining the aim, what was done, what remains, decisions and the next useful step. Do not re-list technical evidence already captured by GitHub, CI or deployments. The current MCP payload still uses version-1 checkpoint fields; see [AGENT_HANDOVERS](AGENT_HANDOVERS.md) for their session-note mapping. A dedicated session-note API is proposed but not yet implemented.
+
 Remote handover tools:
 - `lookout_get_handover`: bounded recent project context and proposed agent checkpoints.
 - `lookout_get_decisions`: human-confirmed decisions.
