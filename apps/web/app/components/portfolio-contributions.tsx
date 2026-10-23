@@ -9,18 +9,27 @@ const labels: Record<string, string> = {
   progress: "Progress", evidence: "Evidence claim", blocker: "Blocker",
   handover: "Handover", next_action: "Proposed action"
 };
-export function PortfolioContributions({ contributions, setupLinks }: {
+export function PortfolioContributions({ contributions, chatgptContributions, setupLinks }: {
   contributions: Contribution[];
+  chatgptContributions: Array<{ id: unknown; kind: unknown; payload: unknown; recorded_at: unknown }>;
   setupLinks: Array<{ id: number; slug: string }>;
 }) {
   return <section className="panel portfolio-edit" aria-labelledby="contribution-title">
     <div className="panel-heading"><div><span className="eyebrow">AGENTS / PROJECT MEMORY</span>
       <h2 id="contribution-title">Agent contributions</h2></div>
-      <span className="count-pill">{contributions.length} recent</span></div>
+      <span className="count-pill">{contributions.length + chatgptContributions.length} recent</span></div>
     <p className="portfolio-contribution-help">Reports are attributed, append-only and <strong>agent-reported</strong>.
       They do not confirm delivery, CI success or a project's lifecycle status.</p>
-    {!contributions.length && <p className="muted padded">No agent contributions yet. Connect a coding agent and ask it to submit a progress report or handover.</p>}
+    {!contributions.length && !chatgptContributions.length && <p className="muted padded">No agent contributions yet. Connect a coding agent and ask it to submit a progress report or handover.</p>}
     <div className="agent-timeline portfolio-contribution-timeline">
+      {chatgptContributions.map(item => {
+       const payload=item.payload as CheckpointInput;
+       return <article className="agent-timeline-entry" key={"chatgpt-"+String(item.id)}>
+        <div className="agent-timeline-top"><span className="agent-source agent-source-agent">ChatGPT · {String(item.kind)} · unverified</span><time>{new Date(String(item.recorded_at)).toLocaleString("en-GB")}</time></div>
+        <h3>{payload.title}</h3><p>{payload.summary}</p><small>ChatGPT via Lookout OAuth · Portfolio contribution</small>
+        <details className="pr-evidence-details"><summary>Claimed work and remaining actions</summary><p><strong>Objective:</strong> {payload.objective}</p>{payload.remaining?.length>0 && <ul>{payload.remaining.map((task,i)=><li key={i}>{task}</li>)}</ul>}</details>
+       </article>;
+      })}
       {contributions.map(item => <article className="agent-timeline-entry" key={item.id}>
         <div className="agent-timeline-top">
           <span className="agent-source agent-source-agent">{labels[item.kind] ?? item.kind} · unverified</span>
