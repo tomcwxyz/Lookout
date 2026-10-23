@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createLogicalProject, databaseConfigured } from "@lookout/db";
+import { createLogicalProject, createAccountProject, databaseConfigured } from "@lookout/db";
+import { getLookoutContext } from "../../../lib/auth/lookout-context";
 import { sameOriginPost } from "../../../lib/scan-request";
 export const runtime = "nodejs";
 export async function POST(request: NextRequest) {
@@ -12,7 +13,11 @@ export async function POST(request: NextRequest) {
     || (body.description !== undefined && (typeof body.description !== "string" || body.description.length > 2000)))
     return NextResponse.json({ error: "Invalid project details" }, { status: 400 });
   try {
-    const id = await createLogicalProject(body.name, body.description as string | undefined);
+    const context=await getLookoutContext();
+    if(context.mode==="account" && context.role==="viewer") return NextResponse.json({error:"Insufficient organisation permissions"},{status:403});
+    const id = context.mode === "account"
+      ? await createAccountProject(context.organisationId,body.name,body.description as string | undefined)
+      : await createLogicalProject(body.name, body.description as string | undefined);
     return NextResponse.json({ id }, { status: 201 });
   } catch {
     return NextResponse.json({ error: "Could not create project" }, { status: 500 });
