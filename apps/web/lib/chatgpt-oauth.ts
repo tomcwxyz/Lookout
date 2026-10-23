@@ -2,7 +2,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 export const ISSUER = "https://lookout-eosin.vercel.app";
 export const RESOURCE = ISSUER + "/api/mcp";
-export const SCOPE = "lookout:read offline_access";
+export const SCOPE = "lookout:read lookout:contribute offline_access";
 
 export type ConsentPayload = {
   clientId: string; redirectUri: string; challenge: string; scope: string;
