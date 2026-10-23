@@ -16,6 +16,15 @@ export function middleware(request: NextRequest) {
   }
   // Lab sign-in and account screens use provider-managed sessions only when the isolated lab is explicitly enabled.
   if (process.env.LOOKOUT_MULTIUSER_LAB === "enabled" && (/^\/auth\//.test(request.nextUrl.pathname) || /^\/api\/auth\//.test(request.nextUrl.pathname) || /^\/lab(?:\/|$)/.test(request.nextUrl.pathname))) return NextResponse.next();
+  // The ORIGINAL Lookout screens now enforce Neon Auth + a verified organisation
+  // at the server-rendered page boundary. Only explicitly migrated account pages
+  // bypass the legacy Basic-auth challenge while the opt-in test is enabled.
+  if (process.env.LOOKOUT_MULTIUSER_LAB === "enabled" && (
+    request.nextUrl.pathname === "/" ||
+    /^\/(?:portfolio(?:\/[1-9]\d*)?|projects\/[1-9]\d*|agents|infrastructure|connections)\/?$/.test(request.nextUrl.pathname) ||
+    /^\/workspace\/[1-9]\d*\/activate\/?$/.test(request.nextUrl.pathname) ||
+    /^\/api\/portfolio(?:\/[1-9]\d*)?\/?$/.test(request.nextUrl.pathname)
+  )) return NextResponse.next();
   // Lab endpoints independently verify bearer sessions and tenant access.
   if (request.nextUrl.pathname.startsWith("/api/lab/")) return NextResponse.next();
   // Cron route handlers perform their own strict CRON_SECRET Bearer check.
