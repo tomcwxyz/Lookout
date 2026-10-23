@@ -16,7 +16,7 @@ export default async function LabHome(){
   <form action={signOutLab}><button type="submit">Sign out</button></form></div>
   <section className="panel" style={{padding:24}}><h2>Your organisations</h2>
    {workspaces.length? <ul>{workspaces.map(o=><li key={o.id} style={{padding:10}}>
-    <Link href={"/workspace/"+o.id+"/activate}><strong>{o.name}</strong></Link> · {o.role}
+    <Link href={"/workspace/"+o.id+"/activate"}><strong>{o.name}</strong></Link> · {o.role}
    </li>)}</ul>:<p>No organisations yet. Create your first private workspace below.</p>}
   </section>
   {workspaces.length===0&&<section className="panel" style={{padding:24}}>
