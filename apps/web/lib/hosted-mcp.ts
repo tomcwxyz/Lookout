@@ -45,7 +45,7 @@ export function createHostedMcpServer(identity: HostedMcpIdentity) {
     description: "Identify the Lookout connection's scope without exposing credentials.",
     inputSchema: z.object({}), annotations: readOnly
   }, async () => result(identity.scope === "owner"
-    ? { access: "personal_portfolio", readOnly: true }
+    ? { access: "personal_portfolio", readOnly: !identity.canContribute, canContribute: Boolean(identity.canContribute), contributionScope: identity.canContribute ? "lookout:contribute" : null, note: identity.canContribute ? "Can append unverified project reports; cannot change GitHub or human-confirmed status." : "Reconnect Lookout in ChatGPT and authorise lookout:contribute to enable reports." }
     : { access: "single_project", projectId: identity.projectId, readOnly: true }));
 
   server.registerTool("lookout_list_projects", {
