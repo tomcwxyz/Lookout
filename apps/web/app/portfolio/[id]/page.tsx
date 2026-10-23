@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { getLookoutContext } from "../../../lib/auth/lookout-context";
+import { getAccountLogicalPortfolio } from "../../../lib/auth/lookout-data";
 import { notFound } from "next/navigation";
 import { databaseConfigured, getLogicalPortfolio, getUnassignedInfrastructure, listPortfolioContributions, listChatgptContributions } from "@lookout/db";
 import { PortfolioContributions } from "../../components/portfolio-contributions";
@@ -8,12 +10,13 @@ export const dynamic = "force-dynamic";
 export default async function PortfolioProjectPage({ params }: { params: Promise<{ id: string }> }) {
   const id = Number((await params).id);
   if (!databaseConfigured() || !Number.isSafeInteger(id) || id < 1) notFound();
-  const data = await getLogicalPortfolio();
+  const account = await getLookoutContext();
+  const data = account.mode === "account" ? await getAccountLogicalPortfolio(account.organisationId) : await getLogicalPortfolio();
   const project = data.projects.find(p => p.id === id);
   if (!project) notFound();
   const linked = new Set(project.repositories.map(r => r.providerId));
   const [infrastructureCandidates, contributions] = await Promise.all([
-    getUnassignedInfrastructure(), listPortfolioContributions(id, 40).catch(() => [])
+    account.mode === "legacy" ? getUnassignedInfrastructure() : Promise.resolve([]), listPortfolioContributions(id, 40).catch(() => [])
   ]);
   const chatgptContributions = Array.from(await listChatgptContributions(id).catch(() => []), row => ({ id: row.id, kind: row.kind, payload: row.payload, recorded_at: row.recorded_at }));
   const candidates = data.projects.flatMap(p => p.repositories
@@ -27,7 +30,7 @@ export default async function PortfolioProjectPage({ params }: { params: Promise
         {project.status ? statusLabels[project.status] ?? project.status : "Unconfirmed"}</span></div>
     <section className="panel portfolio-edit">
       <div className="panel-heading"><h2>Project status</h2></div>
-      <ConfirmProjectStatus id={id} initialStatus={project.status} initialNote={project.statusNote} />
+      {(account.mode === "legacy" || account.role !== "viewer") ? <ConfirmProjectStatus id={id} initialStatus={project.status} initialNote={project.statusNote} /> : <p className="muted padded">View-only organisation membership.</p>}
       {project.statusConfirmedAt && <p className="muted padded">Last confirmed {new Date(project.statusConfirmedAt).toLocaleString("en-GB")}</p>}
     </section>
     <section className="panel portfolio-edit">
@@ -38,7 +41,7 @@ export default async function PortfolioProjectPage({ params }: { params: Promise
             {r.inspectionError ? " · inspection error" : ""}</small></div>
         {r.repositoryObservationId && <Link className="back-link" href={"/projects/" + r.repositoryObservationId}>Work &amp; CI →</Link>}
       </div>)}
-      <AssignRepository portfolioId={id} repositories={candidates} />
+      {account.mode === "legacy" && <AssignRepository portfolioId={id} repositories={candidates} />}
     </section>
     <section className="panel portfolio-edit">
       <div className="panel-heading"><h2>Linked infrastructure ({project.infrastructure.length})</h2></div>
@@ -46,7 +49,7 @@ export default async function PortfolioProjectPage({ params }: { params: Promise
         <div><strong><a href={r.url} target="_blank" rel="noopener noreferrer">{r.name} ↗</a></strong>
           <small>{r.provider} · {r.kind.replaceAll("_", " ")} · {r.linkMethod.replaceAll("_", " ")}</small></div>
       </div>)}
-      <AssignInfrastructure portfolioId={id} resources={infrastructureCandidates} />
+      {account.mode === "legacy" && <AssignInfrastructure portfolioId={id} resources={infrastructureCandidates} />}
     </section>
     <PortfolioContributions chatgptContributions={chatgptContributions} contributions={contributions}
       setupLinks={project.repositories.filter(r => r.repositoryObservationId !== null)
