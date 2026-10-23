@@ -58,6 +58,10 @@ This is an **illustrative sample**, not a claim that those changes have been ver
 
 Introduce a first-class `session_note` contribution with `aim`, `done`, `notDone`, `decisions`, `next`, and optional `evidenceUrls`. Preserve legacy version-1 checkpoints for existing agents. Present session notes first in the project timeline and handover, with technical evidence in a secondary expandable section. Separate **agent-reported**, **source-verified** and **human-confirmed** provenance. Do not infer acceptance from a submitted note.
 
+### When to write a note
+
+Submit one meaningful note at a natural session handover, after substantial changes or when passing work to another agent. Do not report on every tool call or invent unfinished work. The agent should first identify which work was actually done and what can be independently verified. This is guidance rather than an automatic end-of-session hook; automatic capture depends on the host agent supporting lifecycle events.
+
 ## Connect an agent
 
 1. Open [Lookout](https://lookout-eosin.vercel.app) and select the relevant observed project.
