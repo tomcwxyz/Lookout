@@ -56,6 +56,28 @@ function createServer(){
       try { return result(await remote("/api/agent/contributions")); }
       catch (err) { return { isError: true, content: [{ type: "text", text: String(err) }] }; }
     });
+    server.registerTool("lookout_record_session", {
+      description:"Record a meaningful plain-English session note: aim, done, not done, decisions, and next. No raw transcripts or technical dump. Claims remain unverified.",
+      inputSchema:z.object({
+        eventId:z.string().min(6).max(120),agent:z.string().min(1).max(80),
+        title:z.string().min(1).max(180),aim:z.string().min(1).max(1000),
+        done:z.array(z.string().min(1).max(300)).max(12),
+        notDone:z.array(z.string().min(1).max(300)).max(11),
+        decisions:z.array(z.string().min(1).max(300)).max(10),
+        next:z.string().min(1).max(300),
+        context:z.string().max(1500).optional(),
+        blockers:z.array(z.string().min(1).max(300)).max(10).optional()
+      })
+    },async note=>{
+      const checkpoint={
+        version:1,eventId:note.eventId,agent:note.agent,title:note.title,
+        objective:note.aim,summary:note.context?.trim()||note.aim,
+        implemented:note.done,remaining:[...note.notDone,"Next: "+note.next],
+        decisions:note.decisions,blockers:note.blockers||[],tests:[]
+      };
+      try{return result(await remote("/api/agent/contributions",{kind:"handover",checkpoint}));}
+      catch(err){return {isError:true,content:[{type:"text",text:String(err)}]};}
+    });
     server.registerTool("lookout_submit_contribution", {
       description: "Append an attributed progress, evidence, blocker, handover or next-action report to the linked logical Lookout project. Does not mark work complete or confirm test claims. No secrets or transcripts.",
       inputSchema: z.object({
