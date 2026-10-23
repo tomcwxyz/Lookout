@@ -13,14 +13,12 @@ export default async function LabHome(){
   <h1>Welcome{identity.name?", "+identity.name:""}</h1>
   <p>Choose an organisation to see only its projects and shared agent activity.</p></div>
   <form action={signOutLab}><button type="submit">Sign out</button></form></div>
-  {!identity.emailVerified&&<section className="notice"><strong>Verify your email to create a workspace.</strong>
-  <p>Use your account verification email, then sign in again.</p></section>}
   <section className="panel" style={{padding:24}}><h2>Your organisations</h2>
    {workspaces.length? <ul>{workspaces.map(o=><li key={o.id} style={{padding:10}}>
     <Link href={"/lab/"+o.id}><strong>{o.name}</strong></Link> · {o.role}
    </li>)}</ul>:<p>No organisations yet. Create your first private workspace below.</p>}
   </section>
-  {workspaces.length===0&&identity.emailVerified&&<section className="panel" style={{padding:24}}>
+  {workspaces.length===0&&<section className="panel" style={{padding:24}}>
    <h2>Create your workspace</h2>
    <form action={createLabOrganisation} style={{display:"grid",gap:12,maxWidth:460}}>
     <label>Organisation name <input name="name" required minLength={2} maxLength={100} placeholder="My team" /></label>
