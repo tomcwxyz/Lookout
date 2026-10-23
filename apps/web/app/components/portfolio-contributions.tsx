@@ -9,6 +9,19 @@ const labels: Record<string, string> = {
   progress: "Progress", evidence: "Evidence claim", blocker: "Blocker",
   handover: "Handover", next_action: "Proposed action"
 };
+
+function SessionDetails({payload}:{payload:CheckpointInput}) {
+ const next=payload.remaining.find(text=>text.startsWith("Next: "));
+ const unfinished=payload.remaining.filter(text=>!text.startsWith("Next: "));
+ return <div className="pr-evidence-section">
+   {payload.objective && <p><strong>Aim:</strong> {payload.objective}</p>}
+   {payload.implemented.length>0 && <div><strong>What was done</strong><ul>{payload.implemented.map((t,i)=><li key={i}>{t}</li>)}</ul></div>}
+   {unfinished.length>0 && <div><strong>Not finished</strong><ul>{unfinished.map((t,i)=><li key={i}>{t}</li>)}</ul></div>}
+   {payload.decisions.length>0 && <div><strong>Decisions reported</strong><ul>{payload.decisions.map((t,i)=><li key={i}>{t}</li>)}</ul></div>}
+   {next && <p><strong>Pick up next:</strong> {next.slice(6)}</p>}
+ </div>;
+}
+
 export function PortfolioContributions({ contributions, chatgptContributions, setupLinks }: {
   contributions: Contribution[];
   chatgptContributions: Array<{ id: unknown; kind: unknown; payload: unknown; recorded_at: unknown }>;
@@ -16,17 +29,17 @@ export function PortfolioContributions({ contributions, chatgptContributions, se
 }) {
   return <section className="panel portfolio-edit" aria-labelledby="contribution-title">
     <div className="panel-heading"><div><span className="eyebrow">AGENTS / PROJECT MEMORY</span>
-      <h2 id="contribution-title">Agent contributions</h2></div>
+      <h2 id="contribution-title">Session notes and agent activity</h2></div>
       <span className="count-pill">{contributions.length + chatgptContributions.length} recent</span></div>
     <p className="portfolio-contribution-help">Reports are attributed, append-only and <strong>agent-reported</strong>.
       They do not confirm delivery, CI success or a project's lifecycle status.</p>
-    {!contributions.length && !chatgptContributions.length && <p className="muted padded">No agent contributions yet. Connect a coding agent and ask it to submit a progress report or handover.</p>}
+    {!contributions.length && !chatgptContributions.length && <p className="muted padded">No session notes yet. Connected agents can record what was done, what remains, decisions and where to resume.</p>}
     <div className="agent-timeline portfolio-contribution-timeline">
       {chatgptContributions.map(item => {
        const payload=item.payload as CheckpointInput;
        return <article className="agent-timeline-entry" key={"chatgpt-"+String(item.id)}>
         <div className="agent-timeline-top"><span className="agent-source agent-source-agent">ChatGPT · {String(item.kind)} · unverified</span><time>{new Date(String(item.recorded_at)).toLocaleString("en-GB")}</time></div>
-        <h3>{payload.title}</h3><p>{payload.summary}</p><small>ChatGPT via Lookout OAuth · Portfolio contribution</small>
+        <h3>{payload.title}</h3><p>{payload.summary}</p><SessionDetails payload={payload} /><small>ChatGPT via Lookout OAuth · Portfolio contribution</small>
         <details className="pr-evidence-details"><summary>Claimed work and remaining actions</summary><p><strong>Objective:</strong> {payload.objective}</p>{payload.remaining?.length>0 && <ul>{payload.remaining.map((task,i)=><li key={i}>{task}</li>)}</ul>}</details>
        </article>;
       })}
@@ -37,6 +50,7 @@ export function PortfolioContributions({ contributions, chatgptContributions, se
         </div>
         <h3>{item.title}</h3>
         <p>{item.payload.summary}</p>
+        <SessionDetails payload={item.payload} />
         <small>{item.agent} via {item.tokenLabel} · {item.repository}</small>
         <details className="pr-evidence-details"><summary>Evidence, tests and next actions</summary>
           <p><strong>Objective:</strong> {item.payload.objective}</p>
