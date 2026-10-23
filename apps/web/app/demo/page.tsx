@@ -1,5 +1,6 @@
 "use client";
 import { useMemo, useState } from "react";
+import "./demo.css";
 import Link from "next/link";
 import { demoEvents, demoProjects, demoStories } from "./fixtures";
 type Tab = "attention"|"changes"|"agents"|"projects";
