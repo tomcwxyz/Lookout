@@ -27,7 +27,7 @@ export async function authoriseHostedMcp(
   if (ownerTokenMatches(raw, secret)) return { scope: "owner" };
   if (raw.startsWith("lk_oat_")) {
     const session = await authoriseOAuthAccessToken(raw, RESOURCE);
-    return session ? { scope: "owner", canContribute: session.scope.split(/\\s+/).includes("lookout:contribute"), clientId: session.clientId } : null;
+    return session ? { scope: "owner", canContribute: session.scope.split(/\s+/).includes("lookout:contribute"), clientId: session.clientId } : null;
   }
   if (!raw.startsWith("lkp_")) return null;
   const agent = await authoriseAgentToken(raw);
