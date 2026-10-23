@@ -15,7 +15,7 @@ export default async function PortfolioProjectPage({ params }: { params: Promise
   const [infrastructureCandidates, contributions] = await Promise.all([
     getUnassignedInfrastructure(), listPortfolioContributions(id, 40).catch(() => [])
   ]);
-  const chatgptContributions = await listChatgptContributions(id).catch(() => []);
+  const chatgptContributions = Array.from(await listChatgptContributions(id).catch(() => []), row => ({ id: row.id, kind: row.kind, payload: row.payload, recorded_at: row.recorded_at }));
   const candidates = data.projects.flatMap(p => p.repositories
     .filter(r => !linked.has(r.providerId))
     .map(r => ({ providerId: r.providerId, slug: r.slug, currentProject: p.name })));
