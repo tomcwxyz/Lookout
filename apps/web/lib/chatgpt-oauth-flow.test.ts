@@ -37,7 +37,8 @@ describe("personal OAuth consent", () => {
     expect(page.status).toBe(200);
     expect(page.headers.get("content-security-policy")).toContain("form-action 'self' https://chatgpt.com");
     const html = await page.text();
-    expect(html).toContain("Allow read-only access");
+    expect(html).toContain("Allow requested access");
+    expect(html).toContain("Read-only access. No contribution permissions requested.");
     const payload = /name="payload" value="([^"]+)"/.exec(html)?.[1];
     const signature = /name="signature" value="([^"]+)"/.exec(html)?.[1];
     expect(payload).toBeTruthy();
