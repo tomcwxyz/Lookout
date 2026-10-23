@@ -37,3 +37,5 @@ export { resolveOrganisationMember, authorisedPortfolioProject, listTenantPortfo
 export { onboardVerifiedIdentity } from "./organisation-onboarding";
 
 export { resolveActiveMcpGrant, listTenantChatgptContributions } from "./tenant-mcp-repository";
+
+export { listVerifiedIdentityOrganisations } from "./tenant-workspaces";
