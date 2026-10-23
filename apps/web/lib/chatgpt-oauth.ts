@@ -48,7 +48,7 @@ export function validateAuthorizationParams(params: URLSearchParams): ConsentPay
     || params.get("code_challenge_method") !== "S256"
     || !/^[A-Za-z0-9_-]{43}$/.test(challenge)
     || !state || state.length > 2048 || resource !== RESOURCE
-    || !scope.split(/\s+/).every(x => x === "lookout:read" || x === "offline_access")
+    || !scope.split(/\s+/).every(x => x === "lookout:read" || x === "lookout:contribute" || x === "offline_access")
     || !scope.split(/\s+/).includes("lookout:read")) return null;
   return { clientId, redirectUri, challenge, state, resource, scope,
     expires: Date.now() + 10 * 60 * 1000 };
