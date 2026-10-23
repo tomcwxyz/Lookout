@@ -26,3 +26,6 @@ export {
   assignRepositoryToProject, assignInfrastructureToProject, getUnassignedInfrastructure, confirmedProjectStatuses
 } from "./portfolio-repository";
 export type { DiscoveredRepository, ConfirmedProjectStatus } from "./portfolio-repository";
+
+export { submitAgentContribution, listPortfolioContributions, getPortfolioIdForObservedProject,
+  getPortfolioContributionHandover, ContributionConflictError, ContributionScopeError, ContributionRateLimitError } from "./contribution-repository";

@@ -4,7 +4,7 @@ import { RESOURCE } from "./chatgpt-oauth";
 
 export type HostedMcpIdentity =
   | { scope: "owner" }
-  | { scope: "project"; projectId: number };
+  | { scope: "project"; projectId: number; tokenId: number };
 
 export function ownerTokenMatches(raw: string | null, secret: string | undefined): boolean {
   if (!raw || !secret || secret.length < 48 || raw.length > 512) return false;
@@ -30,5 +30,5 @@ export async function authoriseHostedMcp(
   }
   if (!raw.startsWith("lkp_")) return null;
   const agent = await authoriseAgentToken(raw);
-  return agent ? { scope: "project", projectId: agent.projectId } : null;
+  return agent ? { scope: "project", projectId: agent.projectId, tokenId: agent.id } : null;
 }

@@ -90,3 +90,11 @@ The `/portfolio` screen shows **logical projects**, separate from GitHub reposit
 Lookout now inventories up to 500 repositories visible to its own GitHub token (public and authorised private), then inspects a rotating batch of 15 in detail each hour. The UI and ChatGPT MCP list both report inventory and detailed-inspection coverage, including failed inspections. Private access depends on the token permissions; an inaccessible repository is not proof that it does not exist.
 
 Apply the additive migration `0007_portfolio_inventory.sql` to Lookout's own database before deploying. See [scheduled sync](docs/SCHEDULED_SYNC.md) for batch sizing and access notes.
+
+## Agent Contributions Alpha (in development)
+
+Coding agents with an existing repository-scoped Lookout token can contribute structured `progress`, `evidence`, `blocker`, `handover` and `next_action` reports to the linked logical project. Reports are append-only, attributed and unverified. They appear in the project portfolio timeline and are readable by the owner through hosted MCP. ChatGPT OAuth remains **read-only**.
+
+Use hosted MCP's `lookout_submit_contribution` with a scoped `lkp_` token, or the standalone `@good-ship/lookout-mcp@0.3.0` bridge **after publishing**. The `lookout-report` CLI provides a file-based alternative. All reports use the version-1 checkpoint structure plus a contribution `kind`; repeating an event ID with identical content is safe.
+
+Apply the additive `0008_agent_contributions.sql` to Lookout's **own** database before deploying. No migration is made to any observed application. Existing coding-agent tokens remain valid. Projects without an observed repository are not yet supported for agent writes.

@@ -9,7 +9,7 @@ import postgres from "postgres";
  */
 if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL must be configured before migrations");
 const sql = postgres(process.env.DATABASE_URL, { max: 1 });
-const migrations = ["0001_initial.sql", "0002_infrastructure.sql", "0003_observation_locks.sql", "0004_work_decisions.sql", "0005_agent_checkpoints.sql", "0006_oauth_personal.sql", "0007_portfolio_inventory.sql"] as const;
+const migrations = ["0001_initial.sql", "0002_infrastructure.sql", "0003_observation_locks.sql", "0004_work_decisions.sql", "0005_agent_checkpoints.sql", "0006_oauth_personal.sql", "0007_portfolio_inventory.sql", "0008_agent_contributions.sql"] as const;
 
 try {
   await sql.unsafe(`CREATE TABLE IF NOT EXISTS lookout_schema_migrations (

@@ -23,7 +23,7 @@ describe("hosted MCP access boundaries", () => {
   it("distinguishes portfolio owner from scoped project tokens", async () => {
     expect(await authoriseHostedMcp("Bearer " + owner, owner)).toEqual({ scope: "owner" });
     expect(await authoriseHostedMcp("Bearer lkp_" + "a".repeat(64), owner))
-      .toEqual({ scope: "project", projectId: 7 });
+      .toEqual({ scope: "project", projectId: 7, tokenId: 1 });
     expect(await authoriseHostedMcp("Bearer lkp_" + "b".repeat(64), owner)).toBeNull();
     expect(await authoriseHostedMcp("Bearer " + owner.slice(1), owner)).toBeNull();
     expect(await authoriseHostedMcp("Bearer lk_oat_" + "a".repeat(64), owner)).toEqual({ scope: "owner" });

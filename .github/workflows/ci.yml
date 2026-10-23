@@ -16,6 +16,8 @@ jobs:
           node-version: 22
       - run: npm install --no-audit --no-fund
       - run: node --check packages/lookout-mcp/bin/lookout-mcp.mjs
+      - run: node --check packages/lookout-mcp/bin/lookout-report.mjs
+      - run: node --test packages/lookout-mcp/test/report.smoke.mjs
       - run: node --test packages/lookout-mcp/test/launch.smoke.mjs
       - run: npm pack --workspace @good-ship/lookout-mcp --dry-run
       - name: Verify clean npm tarball install

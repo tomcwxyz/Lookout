@@ -10,7 +10,7 @@ Sources provide observations; pure rules interpret bounded evidence; AI can expl
 
 1. **Provider connectors** (`packages/connectors`): read-only GitHub, Neon and Vercel API adapters, explicit attribution and bounded source sampling.
 2. **Core** (`packages/core`): deterministic rules for branch/PR attention, infrastructure findings, PR discussion extraction, work status and portable checkpoint validation.
-3. **Persistence** (`packages/db`): Drizzle/Postgres snapshots, sync records, attention state, resource links, scan leases, human decisions, project-scoped token hashes and append-only checkpoint events.
+3. **Persistence** (`packages/db`): Drizzle/Postgres snapshots, sync records, attention state, resource links, scan leases, human decisions, project-scoped token hashes, append-only checkpoints and categorised logical-project contributions.
 4. **Web** (`apps/web`): server-rendered portfolio, work handovers, explicit human status confirmations, activity timeline, credentials-protected connection management, scan controls and infrastructure page.
 5. **Observation runtime** (`apps/worker`, `apps/web/app/api/cron`): independent polling or three staggered, six-hour Vercel Cron Jobs. Both use per-provider database leases.
 6. **Agent interfaces** (`apps/mcp`, `packages/lookout-mcp`): local database-backed portfolio MCP and standalone npm remote MCP client bridge to project-scoped HTTPS APIs. Optional AI briefs via AI Gateway (`packages/agents`).
@@ -19,7 +19,7 @@ Sources provide observations; pure rules interpret bounded evidence; AI can expl
 
 GitHub repository -> observed project -> sampled PRs, issues, branches, CI and plans -> deterministic work/attention suggestions. Human decisions live in a separate authoritative table. A project can link read-only infrastructure resources, with exact Vercel/Git identity when provided and explicit manual links for ambiguous relationships. Logical portfolio projects are now separate from observed repositories. Each accessible repository is inventoried quickly, then inspected in bounded rotating batches; one logical project can own multiple repository links and explicit infrastructure links. Lifecycle state is nullable until confirmed by the user and is never inferred from code activity.
 
-For agent handovers, dashboard-authenticated users issue scoped revocable bearer tokens. A coding assistant uses the bridge to fetch a limited handover, human decisions and next actions or **propose** a validated, idempotent checkpoint. Records are labelled agent-reported and do not alter human-confirmed status. No raw conversation transcript or TOPO personal memory is ingested.
+For agent handovers, dashboard-authenticated users issue scoped revocable bearer tokens. A coding assistant uses the bridge to fetch a limited handover, human decisions and next actions or **propose** a validated, idempotent checkpoint or categorised contribution (progress, evidence claim, blocker, handover or next action). Records are labelled agent-reported and do not alter human-confirmed status. No raw conversation transcript or TOPO personal memory is ingested. Existing repository-scoped tokens can write to their linked logical project, but scoped reads expose only reports from that repository. Owner OAuth remains read-only. Contributions are bounded to 100 new events per token per rolling day.
 
 ## Trust boundaries
 

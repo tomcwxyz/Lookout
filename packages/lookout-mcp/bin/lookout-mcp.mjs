@@ -17,7 +17,7 @@ async function remote(path,body){
 }
 function result(value){return {content:[{type:"text",text:JSON.stringify(value)}]};}
 function createServer(){
- const server=new McpServer({name:"lookout",version:"0.2.0"});
+ const server=new McpServer({name:"lookout",version:"0.3.0"});
   /** Remote mode never requires a Neon database credential on the coding agent's machine. */
   {
     server.registerTool("lookout_get_handover", {
@@ -42,8 +42,40 @@ function createServer(){
       try {const d=await remote("/api/agent/handover");
         return result({agentReportedNextSteps:d.latestCheckpoints.slice(0,5).map(c=>({
           checkpointId:c.id,title:c.title,agent:c.agent,recordedAt:c.recordedAt,nextStep:c.nextStep,
-          trust:"agent_reported"})),openPullRequests:d.openPullRequests,humanDecisions:d.humanDecisions});}
+          trust:"agent_reported"})),
+          recentContributions:(d.latestContributions??[]).slice(0,5).map(c=>({
+            kind:c.kind,title:c.title,agent:c.agent,recordedAt:c.recordedAt,
+            nextStep:c.nextStep,trust:"agent_reported"})),
+          openPullRequests:d.openPullRequests,humanDecisions:d.humanDecisions});}
       catch(err){return {isError:true,content:[{type:"text",text:String(err)}]};}
+    });
+    server.registerTool("lookout_get_contributions", {
+      description: "Read self-reported progress, blockers, evidence claims and handovers for this token's repository.",
+      inputSchema: z.object({})
+    }, async () => {
+      try { return result(await remote("/api/agent/contributions")); }
+      catch (err) { return { isError: true, content: [{ type: "text", text: String(err) }] }; }
+    });
+    server.registerTool("lookout_submit_contribution", {
+      description: "Append an attributed progress, evidence, blocker, handover or next-action report to the linked logical Lookout project. Does not mark work complete or confirm test claims. No secrets or transcripts.",
+      inputSchema: z.object({
+        kind: z.enum(["progress","evidence","blocker","handover","next_action"]),
+        checkpoint: z.object({
+          version:z.literal(1),eventId:z.string().min(6).max(120),agent:z.string().min(1).max(80),
+          title:z.string().min(1).max(180),objective:z.string().min(1).max(1000),
+          summary:z.string().min(1).max(2500),branch:z.string().max(200).optional(),
+          commitSha:z.string().max(64).optional(),prUrl:z.string().url().optional(),
+          implemented:z.array(z.string().max(300)).max(12),
+          remaining:z.array(z.string().max(300)).max(12),
+          tests:z.array(z.object({description:z.string().max(300),
+            result:z.enum(["passed_claimed","failed_claimed","not_run","needs_human"])})).max(12),
+          decisions:z.array(z.string().max(300)).max(10),
+          blockers:z.array(z.string().max(300)).max(10),capturedAt:z.string().optional()
+        })
+      })
+    }, async input => {
+      try { return result(await remote("/api/agent/contributions", input)); }
+      catch (err) { return { isError: true, content: [{ type: "text", text: String(err) }] }; }
     });
     server.registerTool("lookout_propose_checkpoint", {
       description:"Submit a bounded agent-reported progress checkpoint. Does NOT confirm task completion or overwrite human decisions. Do not include secrets or raw conversation transcripts.",

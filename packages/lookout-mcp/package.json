@@ -1,14 +1,16 @@
 {
   "name": "@good-ship/lookout-mcp",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Project-scoped Lookout MCP bridge for coding assistants",
   "type": "module",
   "bin": {
-    "lookout-mcp": "./bin/lookout-mcp.mjs"
+    "lookout-mcp": "./bin/lookout-mcp.mjs",
+    "lookout-report": "./bin/lookout-report.mjs"
   },
   "files": [
     "bin/lookout-mcp.mjs",
-    "README.md"
+    "README.md",
+    "bin/lookout-report.mjs"
   ],
   "dependencies": {
     "@modelcontextprotocol/server": "^2.0.0",
