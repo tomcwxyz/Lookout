@@ -1,10 +1,13 @@
 import Link from "next/link";
+import { getLookoutContext } from "../../lib/auth/lookout-context";
+import { getAccountLogicalPortfolio } from "../../lib/auth/lookout-data";
 import { databaseConfigured, getLogicalPortfolio } from "@lookout/db";
 import { CreateProject, statusLabels } from "./portfolio-actions";
 export const dynamic = "force-dynamic";
 
 export default async function PortfolioPage() {
-  const data = databaseConfigured() ? await getLogicalPortfolio().catch(() => null) : null;
+  const account = await getLookoutContext();
+  const data = databaseConfigured() ? await (account.mode === "account" ? getAccountLogicalPortfolio(account.organisationId) : getLogicalPortfolio()).catch(() => null) : null;
   const projects = data?.projects ?? [];
   const coverage = data?.coverage;
   return <main className="detail-layout">
@@ -27,7 +30,7 @@ export default async function PortfolioPage() {
       last inventory {coverage.lastInventoryAt ? new Date(coverage.lastInventoryAt).toLocaleString("en-GB") : "not yet run"}.
       A repository outside this inventory may be inaccessible to the token, not absent from GitHub.</p>
     </section>}
-    <section className="panel portfolio-create"><div className="panel-heading"><h2>New initiative</h2></div><CreateProject /></section>
+    <section className="panel portfolio-create"><div className="panel-heading"><h2>New initiative</h2></div>{(account.mode === "legacy" || account.role !== "viewer") ? <CreateProject /> : <p className="muted padded">Organisation viewers cannot create projects.</p>}</section>
     <section className="panel portfolio-directory">
       <div className="panel-heading"><div><span className="eyebrow">PRODUCTS / INITIATIVES</span><h2>All projects</h2></div>
         <span className="count-pill">{projects.length}</span></div>

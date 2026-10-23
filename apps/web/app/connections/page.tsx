@@ -1,8 +1,20 @@
 import Link from "next/link";
+import { getLookoutContext } from "../../lib/auth/lookout-context";
 
 export const dynamic = "force-dynamic";
 
-export default function Connections() {
+export default async function Connections() {
+  const account = await getLookoutContext();
+  if (account.mode === "account") return <main className="detail-layout">
+    <Link href="/" className="back-link">← Lookout overview</Link>
+    <div className="detail-header"><div><span className="eyebrow">LOOKOUT / CONNECTIONS</span>
+      <h1>Connected assistants and services</h1><p>{account.name} · your organisation workspace</p></div></div>
+    <section className="panel detail-panel"><div className="panel-heading"><h2>Organisation connections</h2></div>
+      <div className="padded"><p>This workspace uses the same Lookout interface, with accounts and separate project permissions.</p>
+      <p>Organisation-specific MCP authorisation and provider tokens are not yet enabled. We will not reuse the original owner-wide token for other accounts.</p>
+      <p className="work-caution">Existing single-owner ChatGPT and agent connections remain available in the legacy account. No additional permissions have been granted by signing up.</p></div>
+    </section></main>;
+
   // This is server-side only: never render the credential itself.
   const configured = (process.env.LOOKOUT_MCP_OWNER_TOKEN?.length ?? 0) >= 48;
   return (

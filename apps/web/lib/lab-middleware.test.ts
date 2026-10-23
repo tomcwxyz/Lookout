@@ -21,4 +21,25 @@ describe("lab authentication middleware", () => {
    else process.env.LOOKOUT_DASHBOARD_TOKEN=prior;
   }
  });
+ it("routes account pages to their server-side session guard but never opens provider controls",()=>{
+   const oldLab=process.env.LOOKOUT_MULTIUSER_LAB;
+   const oldToken=process.env.LOOKOUT_DASHBOARD_TOKEN;
+   process.env.LOOKOUT_MULTIUSER_LAB="enabled";
+   process.env.LOOKOUT_DASHBOARD_TOKEN="test-dashboard-password";
+   try {
+     for(const path of ["/","/portfolio","/portfolio/1","/projects/1","/agents","/infrastructure","/connections","/workspace/1/activate","/api/portfolio/1"]){
+       const response=middleware(new NextRequest("https://lookout.example"+path));
+       expect(response.status,path).toBe(200);
+     }
+     for(const path of ["/api/scan/github","/api/portfolio/assign","/api/oauth/revoke"]){
+       const response=middleware(new NextRequest("https://lookout.example"+path));
+       expect(response.status,path).toBe(401);
+     }
+   } finally {
+     if(oldLab===undefined)delete process.env.LOOKOUT_MULTIUSER_LAB;
+     else process.env.LOOKOUT_MULTIUSER_LAB=oldLab;
+     if(oldToken===undefined)delete process.env.LOOKOUT_DASHBOARD_TOKEN;
+     else process.env.LOOKOUT_DASHBOARD_TOKEN=oldToken;
+   }
+ });
 });

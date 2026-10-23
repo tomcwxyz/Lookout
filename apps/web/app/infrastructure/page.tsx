@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { getLookoutContext } from "../../lib/auth/lookout-context";
+import { getAccountInfrastructure } from "../../lib/auth/lookout-data";
 import { databaseConfigured, getInfrastructurePortfolio } from "@lookout/db";
 import { LinkForm } from "./resource-link-form";
 import { ScanControls } from "../components/scan-controls";
@@ -6,7 +8,8 @@ import { ScanControls } from "../components/scan-controls";
 export const dynamic = "force-dynamic";
 
 export default async function InfrastructurePage() {
-  const data = databaseConfigured() ? await getInfrastructurePortfolio().catch(() => null) : null;
+  const account=await getLookoutContext();
+  const data = databaseConfigured() ? await (account.mode === "account" ? getAccountInfrastructure(account.organisationId) : getInfrastructurePortfolio()).catch(() => null) : null;
   const resources = data?.resources ?? [];
   const findings = data?.findings ?? [];
   const children = resources.filter(r => r.kind === "neon_branch" || r.kind === "vercel_deployment");
@@ -21,7 +24,7 @@ export default async function InfrastructurePage() {
     {!data && <section className="notice"><strong>No infrastructure data available</strong>
       <p>Apply migration 0002, configure NEON_API_KEY or VERCEL_API_TOKEN, then run npm run sync.</p>
     </section>}
-    <ScanControls compact />
+    {account.mode === "legacy" ? <ScanControls compact /> : <p className="work-caution">Only resources linked to this organisation are shown. Connecting provider accounts and starting organisation-scoped scans will be enabled separately.</p>}
     <div className="metrics">
       <div className="metric"><span>Provider projects</span><strong>{projects.length}</strong><small>Neon and Vercel</small></div>
       <div className="metric"><span>Branches / deployments</span><strong>{children.length}</strong><small>Latest deployment per environment</small></div>
@@ -45,7 +48,7 @@ export default async function InfrastructurePage() {
               <p>{resource.snapshot.status ?? "Status not supplied"} · {resource.snapshot.endpointCount ?? "—"} compute endpoints · observed {new Date(resource.observedAt).toLocaleString("en-GB")}</p>
               {matched.map(item => <p className="infra-warning" key={item.id}>⚠ {item.explanation}</p>)}
             </div>
-            <LinkForm resourceKey={resource.key} projectId={resource.projectId} projects={data?.projects ?? []} />
+            {account.mode === "legacy" && <LinkForm resourceKey={resource.key} projectId={resource.projectId} projects={data?.projects ?? []} />}
           </article>;
         })}
     </section>

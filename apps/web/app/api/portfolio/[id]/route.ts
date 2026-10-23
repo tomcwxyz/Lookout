@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { confirmLogicalProject, confirmedProjectStatuses, databaseConfigured } from "@lookout/db";
+import { confirmLogicalProject, confirmAccountProjectStatus, confirmedProjectStatuses, databaseConfigured } from "@lookout/db";
+import { getLookoutContext } from "../../../../lib/auth/lookout-context";
 import { sameOriginPost } from "../../../../lib/scan-request";
 export const runtime = "nodejs";
 export async function PATCH(request: NextRequest, context: { params: Promise<{ id: string }> }) {
@@ -14,7 +15,14 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
       typeof body.note !== "string" || body.note.length > 2000)
     return NextResponse.json({ error: "Invalid project status" }, { status: 400 });
   try {
-    await confirmLogicalProject(id, body.status as (typeof confirmedProjectStatuses)[number] | null, body.note);
+    const account=await getLookoutContext();
+    if(account.mode==="account") {
+      if(account.role==="viewer") return NextResponse.json({error:"Insufficient organisation permissions"},{status:403});
+      const saved=await confirmAccountProjectStatus(account.organisationId,id,body.status as string|null,body.note);
+      if(!saved) return NextResponse.json({error:"Project not found"},{status:404});
+    } else {
+      await confirmLogicalProject(id, body.status as (typeof confirmedProjectStatuses)[number] | null, body.note);
+    }
     return NextResponse.json({ ok: true });
   } catch { return NextResponse.json({ error: "Project not found" }, { status: 404 }); }
 }

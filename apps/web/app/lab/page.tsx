@@ -8,6 +8,7 @@ export default async function LabHome(){
  const identity=await getLabIdentity();
  if(!identity)redirect("/auth/sign-in");
  const workspaces=await listVerifiedIdentityOrganisations(identity.issuer,identity.subject);
+ if (workspaces.length===1) redirect("/workspace/"+workspaces[0].id+"/activate");
  return <main className="detail-layout" style={{maxWidth:850,margin:"3rem auto"}}>
   <div className="detail-header"><div><span className="eyebrow">LOOKOUT / YOUR WORKSPACES</span>
   <h1>Welcome{identity.name?", "+identity.name:""}</h1>
@@ -15,7 +16,7 @@ export default async function LabHome(){
   <form action={signOutLab}><button type="submit">Sign out</button></form></div>
   <section className="panel" style={{padding:24}}><h2>Your organisations</h2>
    {workspaces.length? <ul>{workspaces.map(o=><li key={o.id} style={{padding:10}}>
-    <Link href={"/lab/"+o.id}><strong>{o.name}</strong></Link> · {o.role}
+    <Link href={"/workspace/"+o.id+"/activate"}><strong>{o.name}</strong></Link> · {o.role}
    </li>)}</ul>:<p>No organisations yet. Create your first private workspace below.</p>}
   </section>
   {workspaces.length===0&&<section className="panel" style={{padding:24}}>
