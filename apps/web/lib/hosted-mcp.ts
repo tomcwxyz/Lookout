@@ -152,6 +152,7 @@ export function createHostedMcpServer(identity: HostedMcpIdentity) {
     return data ? result({
       ...data, logicalProject: logical?.project ?? null,
       latestContributions: logical?.contributions ?? [],
+      chatgptContributions: logical?.project ? await listChatgptContributions((await getPortfolioIdForObservedProject(id))!).catch(() => []) : [],
       trustNote: "Agent contributions and checkpoints are self-reports; human decisions remain authoritative."
     }) : failure("Project not found.");
   });
