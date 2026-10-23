@@ -35,3 +35,5 @@ export { submitChatgptContribution, listChatgptContributions } from "./chatgpt-c
 export { resolveOrganisationMember, authorisedPortfolioProject, listTenantPortfolioProjects } from "./tenant-repository";
 
 export { onboardVerifiedIdentity } from "./organisation-onboarding";
+
+export { resolveActiveMcpGrant, listTenantChatgptContributions } from "./tenant-mcp-repository";
