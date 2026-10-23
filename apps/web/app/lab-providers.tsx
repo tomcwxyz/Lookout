@@ -6,7 +6,7 @@ import type {ReactNode} from "react";
 import {authClient} from "../lib/auth/lab-client";
 export function LabProviders({children}:{children:ReactNode}){
  const router=useRouter();
- return <NeonAuthUIProvider authClient={authClient} navigate={router.push} replace={router.replace}
+ return <NeonAuthUIProvider authClient={authClient} defaultTheme="light" navigate={router.push} replace={router.replace}
    onSessionChange={()=>router.refresh()} redirectTo="/lab" Link={Link}>
     {children}
    </NeonAuthUIProvider>;
