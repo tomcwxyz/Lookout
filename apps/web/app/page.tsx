@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ScanControls } from "./components/scan-controls";
 import { deriveWorkHandover } from "@lookout/core";
 import { workStageLabels, confirmedStageLabels, effectiveWorkStatus } from "./components/work-handover";
-import { databaseConfigured, getPortfolio, getInfrastructurePortfolio, getLogicalPortfolio } from "@lookout/db";
+import { databaseConfigured, getPortfolio, getInfrastructurePortfolio, getLogicalPortfolio, listPortfolioContributions } from "@lookout/db";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +21,7 @@ export default async function Home() {
   const infrastructure = databaseConfigured() ? await getInfrastructurePortfolio().catch(() => null) : null;
   const logical = databaseConfigured() ? await getLogicalPortfolio().catch(() => null) : null;
   const infraAttention = infrastructure?.findings.length ?? 0;
+  const agentRecent = (await Promise.all((logical?.projects ?? []).map(p => listPortfolioContributions(p.id, 5).catch(() => [])))).flat().sort((a,b) => new Date(b.recordedAt).getTime()-new Date(a.recordedAt).getTime()).slice(0,5);
   const allProjects = data?.projects ?? [];
   const items = data?.attention ?? [];
   const decisions = data?.workDecisions ?? [];
@@ -55,6 +56,7 @@ export default async function Home() {
           <Link href="/" className="nav-link active"><span>▦</span> Overview</Link>
           <a href="#attention" className="nav-link"><span>◇</span> Attention inbox <span className="nav-count">{items.length}</span></a>
           <Link href="/portfolio" className="nav-link"><span>⌁</span> Project portfolio</Link>
+          <Link href="/agents" className="nav-link"><span>✦</span> Agent activity</Link>
           <Link href="/demo" className="nav-link"><span>✧</span> Explore demo</Link>
           <Link href="/connections" className="nav-link"><span>⌘</span> Web chat connection</Link>
           <Link href="/infrastructure" className="nav-link"><span>♧</span> Infrastructure {infraAttention > 0 && <span className="nav-count">{infraAttention}</span>}</Link>
@@ -64,8 +66,8 @@ export default async function Home() {
 
       <main className="content">
         <div className="topline"><span>PORTFOLIO / OVERVIEW</span><span>{data?.latestRun ? "Last synchronised " + dateLabel(data.latestRun.finishedAt ?? data.latestRun.startedAt) : "Awaiting first sync"}</span></div>
-        <header className="hero">
-          <div><span className="eyebrow">YOUR DEVELOPMENT PORTFOLIO</span><h1>Keep everything <em>in sight.</em></h1><p>Changes, unfinished work, infrastructure and the things that need your attention — all in one place.</p></div>
+        <header className="hero dashboard-hero">
+          <div><span className="eyebrow">YOUR DEVELOPMENT PORTFOLIO</span><h1>Know what needs <em>attention.</em></h1><p>A connected view of development work, reported agent progress and independently observed infrastructure. Every claim has a source.</p></div>
           <div className="hero-mark" aria-hidden="true"><div className="radar-ring ring-1" /><div className="radar-ring ring-2" /><div className="radar-ring ring-3" /><div className="radar-centre" /></div>
         </header>
 
@@ -73,7 +75,18 @@ export default async function Home() {
 
         <ScanControls />
 
-        <section className="work-portfolio">
+<section className="dashboard-intelligence" aria-label="Portfolio intelligence">
+          <div className="intelligence-heading"><div><span className="eyebrow">TODAY / YOUR WORKSPACE</span><h2>Where things stand</h2><p>Start with the decisions that need you. Agent reports are labelled as claims, not verified changes.</p></div><Link href="/portfolio">Explore all projects →</Link></div>
+          <div className="intelligence-grid">
+            <article className="panel intelligence-panel"><div className="panel-heading"><div><span className="eyebrow">ACTIONABLE WORK</span><h2>Needs attention</h2></div><span className="count-pill">{workQueue.length} projects</span></div>
+              {workQueue.length===0?<p className="padded muted">No outstanding work identified in recent inspected sources.</p>:workQueue.slice(0,5).map(({project,item})=><div className="intelligence-entry" key={project.id}><div><Link href={"/projects/"+project.id}><strong>{project.name}</strong></Link><span className={"work-status-label stage-"+item!.stage}>{confirmedStageLabels[item!.stage]??workStageLabels[item!.stage as keyof typeof workStageLabels]}</span></div><p>{item!.signal.title}</p><small>{item!.signal.nextAction??"Review available evidence before acting"}</small></div>)}
+              <a className="intelligence-more" href="#attention">Review all source findings ↓</a></article>
+            <article className="panel intelligence-panel"><div className="panel-heading"><div><span className="eyebrow">PROJECT MEMORY</span><h2>Agent activity</h2></div><Link href="/agents" className="count-pill">All reports →</Link></div>
+              {agentRecent.length===0?<div className="empty"><h3>No contributions yet</h3><p>Connect a coding assistant using a project-scoped token to capture progress, blockers and handovers.</p></div>:agentRecent.map(report=><div className="intelligence-entry" key={report.id}><div><strong>{report.agent}</strong><span className="mini-alert">Unverified report</span></div><p>{report.title}</p><small>{report.payload.summary} · {dateLabel(report.recordedAt)}</small></div>)}
+            </article>
+          </div>
+        </section>
+        <section className="work-portfolio" id="work-queue">
           <div className="work-heading"><div><span className="eyebrow">WHERE DID I LEAVE THINGS?</span><h2>Work to pick up</h2></div>
             <span className="count-pill">{workQueue.length} projects highlighted</span></div>
           <p className="work-caution">A handover based on available PRs, issues and plans. Suggested statuses can be corrected and confirmed from each project page.</p>
@@ -110,7 +123,7 @@ export default async function Home() {
           <section className="panel projects-panel" id="projects">
             <div className="panel-heading"><div><span className="eyebrow">CONNECTED CODEBASES</span><h2>Your projects</h2></div><Link href="/portfolio" className="count-pill">All {logical?.projects.length ?? allProjects.length} projects →</Link></div>
             {allProjects.length === 0 ? <div className="empty"><span className="empty-icon">⌘</span><h3>No projects discovered</h3><p>Run the worker with a read-only GitHub token to discover repositories and build their first project snapshots.</p></div> :
-              <div className="project-list">{allProjects.map(project => {
+              <div className="project-list">{allProjects.slice(0, 12).map(project => {
                 const pending = items.filter(item => item.projectId === project.id);
                 return <Link className="project-row" key={project.id} href={"/projects/" + project.id}>
                   <div className="project-avatar">{project.name.slice(0, 2).toUpperCase()}</div><div className="project-body"><strong>{project.name}</strong><small>{project.slug}</small><span>{handovers.find(x => x.project.id === project.id)?.decisions.length ? 'Work status reviewed · ' : ''}{deriveWorkHandover(project.snapshot).nextStep}</span></div><div className="project-side">{pending.length ? <span className="mini-alert">{pending.length} to review</span> : <span className="mini-clear">Observed</span>}<small>{dateLabel(project.observedAt)}</small></div>
