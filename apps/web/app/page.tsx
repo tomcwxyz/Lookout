@@ -16,7 +16,10 @@ function dateLabel(value: Date | string | null | undefined) {
 export default async function Home() {
   const account = await getLookoutContext();
   const organisationId = account.mode === "account" ? account.organisationId : null;
-  let data: Awaited<ReturnType<typeof getPortfolio>> | null = null;
+  type PortfolioView = Omit<Awaited<ReturnType<typeof getPortfolio>>, "latestRun"> & {
+    latestRun: Awaited<ReturnType<typeof getPortfolio>>["latestRun"] | null
+  };
+  let data: PortfolioView | null = null;
   let error: string | null = null;
   if (databaseConfigured()) {
     try { data = organisationId !== null ? await getAccountObservedPortfolio(organisationId) : await getPortfolio(); }
