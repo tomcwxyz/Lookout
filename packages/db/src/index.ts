@@ -39,3 +39,5 @@ export { onboardVerifiedIdentity } from "./organisation-onboarding";
 export { resolveActiveMcpGrant, listTenantChatgptContributions } from "./tenant-mcp-repository";
 
 export { listVerifiedIdentityOrganisations } from "./tenant-workspaces";
+
+export { getTenantLookoutOverview, getTenantLookoutProject } from "./tenant-lookout-overview";
