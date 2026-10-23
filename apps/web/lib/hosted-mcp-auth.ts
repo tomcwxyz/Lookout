@@ -3,7 +3,7 @@ import { authoriseAgentToken, authoriseOAuthAccessToken } from "@lookout/db";
 import { RESOURCE } from "./chatgpt-oauth";
 
 export type HostedMcpIdentity =
-  | { scope: "owner" }
+  | { scope: "owner"; canContribute?: boolean; clientId?: string }
   | { scope: "project"; projectId: number; tokenId: number };
 
 export function ownerTokenMatches(raw: string | null, secret: string | undefined): boolean {
@@ -26,7 +26,8 @@ export async function authoriseHostedMcp(
   if (!raw) return null;
   if (ownerTokenMatches(raw, secret)) return { scope: "owner" };
   if (raw.startsWith("lk_oat_")) {
-    return await authoriseOAuthAccessToken(raw, RESOURCE) ? { scope: "owner" } : null;
+    const session = await authoriseOAuthAccessToken(raw, RESOURCE);
+    return session ? { scope: "owner", canContribute: session.scope.split(/\s+/).includes("lookout:contribute"), clientId: session.clientId } : null;
   }
   if (!raw.startsWith("lkp_")) return null;
   const agent = await authoriseAgentToken(raw);

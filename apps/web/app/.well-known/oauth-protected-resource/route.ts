@@ -5,6 +5,6 @@ export function GET() {
     resource: RESOURCE,
     authorization_servers: [ISSUER],
     bearer_methods_supported: ["header"],
-    scopes_supported: ["lookout:read", "offline_access"]
+    scopes_supported: ["lookout:read", "lookout:contribute", "offline_access"]
   }, { headers: NO_STORE });
 }

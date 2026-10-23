@@ -2,7 +2,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 export const ISSUER = "https://lookout-eosin.vercel.app";
 export const RESOURCE = ISSUER + "/api/mcp";
-export const SCOPE = "lookout:read offline_access";
+export const SCOPE = "lookout:read lookout:contribute offline_access";
 
 export type ConsentPayload = {
   clientId: string; redirectUri: string; challenge: string; scope: string;
@@ -48,7 +48,7 @@ export function validateAuthorizationParams(params: URLSearchParams): ConsentPay
     || params.get("code_challenge_method") !== "S256"
     || !/^[A-Za-z0-9_-]{43}$/.test(challenge)
     || !state || state.length > 2048 || resource !== RESOURCE
-    || !scope.split(/\s+/).every(x => x === "lookout:read" || x === "offline_access")
+    || !scope.split(/\s+/).every(x => x === "lookout:read" || x === "lookout:contribute" || x === "offline_access")
     || !scope.split(/\s+/).includes("lookout:read")) return null;
   return { clientId, redirectUri, challenge, state, resource, scope,
     expires: Date.now() + 10 * 60 * 1000 };

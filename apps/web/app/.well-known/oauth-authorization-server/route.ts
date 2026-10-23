@@ -10,7 +10,7 @@ export function GET() {
     code_challenge_methods_supported: ["S256"],
     token_endpoint_auth_methods_supported: ["none"],
     client_id_metadata_document_supported: true,
-    scopes_supported: ["lookout:read", "offline_access"],
+    scopes_supported: ["lookout:read", "lookout:contribute", "offline_access"],
     authorization_response_iss_parameter_supported: true
   }, { headers: NO_STORE });
 }

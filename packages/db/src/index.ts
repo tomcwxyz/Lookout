@@ -29,3 +29,5 @@ export type { DiscoveredRepository, ConfirmedProjectStatus } from "./portfolio-r
 
 export { submitAgentContribution, listPortfolioContributions, getPortfolioIdForObservedProject,
   getPortfolioContributionHandover, ContributionConflictError, ContributionScopeError, ContributionRateLimitError } from "./contribution-repository";
+
+export { submitChatgptContribution, listChatgptContributions } from "./chatgpt-contribution-repository";

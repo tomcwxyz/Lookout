@@ -36,16 +36,16 @@ padding:13px 20px;border-radius:9px;font:inherit;cursor:pointer}
 .secondary{background:#e7eeea;color:#164c38}form{display:inline-block;margin:8px 8px 0 0}
 </style></head><body><main>
 <p class="small">LOOKOUT / PRIVATE CONNECTION</p>
-<h1>Allow ChatGPT to read Lookout?</h1>
-<p>ChatGPT is requesting <strong>read-only access to your observed project portfolio</strong>,
+<h1>Connect ChatGPT to Lookout?</h1>
+<p>ChatGPT is requesting <strong>access to your observed project portfolio</strong>,
 including attention items, project handovers and infrastructure summaries.</p>
-<p>This does not permit ChatGPT to change projects, merge code or submit agent checkpoints.</p>
+<p>${params.scope.split(/\s+/).includes("lookout:contribute") ? "You are also granting permission to submit attributed, unverified project reports and handovers. This cannot change confirmed project status, merge code or deploy applications." : "Read-only access. No contribution permissions requested."}</p>
 <p class="small">You are signed in with your existing Lookout dashboard credentials.
 Access tokens expire after one hour and can be refreshed for up to 30 days.</p>
 <form method="post" action="/oauth/authorize">
 <input type="hidden" name="payload" value="${escapeHtml(encoded)}">
 <input type="hidden" name="signature" value="${escapeHtml(signature)}">
-<button type="submit" name="decision" value="allow">Allow read-only access</button>
+<button type="submit" name="decision" value="allow">Allow requested access</button>
 <button type="submit" class="secondary" name="decision" value="deny">Cancel</button>
 </form></main></body></html>`;
   return new Response(html, { status: 200, headers: htmlHeaders });
