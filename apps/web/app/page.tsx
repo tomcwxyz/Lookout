@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ScanControls } from "./components/scan-controls";
 import { deriveWorkHandover } from "@lookout/core";
 import { workStageLabels, confirmedStageLabels, effectiveWorkStatus } from "./components/work-handover";
-import { databaseConfigured, getPortfolio, getInfrastructurePortfolio, getLogicalPortfolio, listPortfolioContributions } from "@lookout/db";
+import { databaseConfigured, getPortfolio, getInfrastructurePortfolio, getLogicalPortfolio, listPortfolioContributions, listChatgptContributions } from "@lookout/db";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +21,10 @@ export default async function Home() {
   const infrastructure = databaseConfigured() ? await getInfrastructurePortfolio().catch(() => null) : null;
   const logical = databaseConfigured() ? await getLogicalPortfolio().catch(() => null) : null;
   const infraAttention = infrastructure?.findings.length ?? 0;
-  const agentRecent = (await Promise.all((logical?.projects ?? []).map(p => listPortfolioContributions(p.id, 5).catch(() => [])))).flat().sort((a,b) => new Date(b.recordedAt).getTime()-new Date(a.recordedAt).getTime()).slice(0,5);
+  const agentRecent = (await Promise.all((logical?.projects ?? []).map(async p => {
+ const [agents,chatgpt]=await Promise.all([listPortfolioContributions(p.id,5).catch(()=>[]),listChatgptContributions(p.id).catch(()=>[])]);
+ return [...agents.map(a=>({id:"agent-"+a.id,agent:a.agent,title:a.title,summary:a.payload.summary,recordedAt:new Date(a.recordedAt)})),...chatgpt.map(c=>{const payload=c.payload as {title?:string;summary?:string};return {id:"chatgpt-"+c.id,agent:"ChatGPT",title:payload.title??"ChatGPT contribution",summary:payload.summary??"",recordedAt:new Date(String(c.recorded_at))};})];
+ }))).flat().sort((a,b) => b.recordedAt.getTime()-a.recordedAt.getTime()).slice(0,5);
   const allProjects = data?.projects ?? [];
   const items = data?.attention ?? [];
   const decisions = data?.workDecisions ?? [];
@@ -82,7 +85,7 @@ export default async function Home() {
               {workQueue.length===0?<p className="padded muted">No outstanding work identified in recent inspected sources.</p>:workQueue.slice(0,5).map(({project,item})=><div className="intelligence-entry" key={project.id}><div><Link href={"/projects/"+project.id}><strong>{project.name}</strong></Link><span className={"work-status-label stage-"+item!.stage}>{confirmedStageLabels[item!.stage]??workStageLabels[item!.stage as keyof typeof workStageLabels]}</span></div><p>{item!.signal.title}</p><small>{item!.signal.nextAction??"Review available evidence before acting"}</small></div>)}
               <a className="intelligence-more" href="#attention">Review all source findings ↓</a></article>
             <article className="panel intelligence-panel"><div className="panel-heading"><div><span className="eyebrow">PROJECT MEMORY</span><h2>Agent activity</h2></div><Link href="/agents" className="count-pill">All reports →</Link></div>
-              {agentRecent.length===0?<div className="empty"><h3>No contributions yet</h3><p>Connect a coding assistant using a project-scoped token to capture progress, blockers and handovers.</p></div>:agentRecent.map(report=><div className="intelligence-entry" key={report.id}><div><strong>{report.agent}</strong><span className="mini-alert">Unverified report</span></div><p>{report.title}</p><small>{report.payload.summary} · {dateLabel(report.recordedAt)}</small></div>)}
+              {agentRecent.length===0?<div className="empty"><h3>No contributions yet</h3><p>Connect a coding assistant using a project-scoped token to capture progress, blockers and handovers.</p></div>:agentRecent.map(report=><div className="intelligence-entry" key={report.id}><div><strong>{report.agent}</strong><span className="mini-alert">Unverified report</span></div><p>{report.title}</p><small>{report.summary} · {dateLabel(report.recordedAt)}</small></div>)}
             </article>
           </div>
         </section>
