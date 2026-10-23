@@ -23,6 +23,7 @@ Use command `npx` with arguments `-y @good-ship/lookout-mcp@0.2.0`. Avoid writin
 **Writing guidance:** the contribution should be a short, plain-English session note explaining the aim, what was done, what remains, decisions and the next useful step. Do not re-list technical evidence already captured by GitHub, CI or deployments. The current MCP payload still uses version-1 checkpoint fields; see [AGENT_HANDOVERS](AGENT_HANDOVERS.md) for their session-note mapping. A dedicated session-note API is proposed but not yet implemented.
 
 Remote handover tools:
+- `lookout_record_session`: preferred plain-English end-of-session note (aim, done, not done, decisions, next), written as an agent-reported claim and stored compatibly in the existing checkpoint API. Available in the local stdio bridge after the next package release; not yet exposed by the hosted ChatGPT MCP.
 - `lookout_get_handover`: bounded recent project context and proposed agent checkpoints.
 - `lookout_get_decisions`: human-confirmed decisions.
 - `lookout_get_next_actions`: next actions from available evidence.
