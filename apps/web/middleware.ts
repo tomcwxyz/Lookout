@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export function middleware(request: NextRequest) {
+  // This public route contains only deterministic fictional fixtures; no provider or DB calls.
+  if (request.nextUrl.pathname === "/demo" || request.nextUrl.pathname === "/demo/") return NextResponse.next();
   // OAuth discovery and token exchange are public; consent still requires dashboard Basic auth.
   if (/^\/\.well-known\/oauth-(?:protected-resource|authorization-server)(?:\/api\/mcp)?\/?$/.test(request.nextUrl.pathname)
     || request.nextUrl.pathname === "/oauth/token") return NextResponse.next();
