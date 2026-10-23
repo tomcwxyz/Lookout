@@ -64,15 +64,15 @@ export async function rotateOAuthRefreshToken(raw: string, clientId: string, res
   return issueOAuthTokens(clientId, resource, String(rows[0].scope));
 }
 
-export async function authoriseOAuthAccessToken(raw: string, resource: string): Promise<boolean> {
-  if (!/^lk_oat_[a-f0-9]{64}$/.test(raw)) return false;
+export async function authoriseOAuthAccessToken(raw: string, resource: string): Promise<{scope:string;clientId:string}|null> {
+  if (!/^lk_oat_[a-f0-9]{64}$/.test(raw)) return null;
   const rows = await getDatabase().execute(sql`
-    SELECT token_hash FROM lookout_oauth_access_tokens
+    SELECT scope, client_id FROM lookout_oauth_access_tokens
     WHERE token_hash = ${fingerprint(raw)} AND resource = ${resource}
       AND scope LIKE '%lookout:read%' AND expires_at > now()
     LIMIT 1
   `);
-  return rows.length > 0;
+  return rows[0] ? { scope: String(rows[0].scope), clientId: String(rows[0].client_id) } : null;
 }
 
 export function verifyPKCE(verifier: string, challenge: string) {
