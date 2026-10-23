@@ -16,7 +16,9 @@
     "@lookout/worker": "*",
     "@lookout/core": "*",
     "@modelcontextprotocol/server": "^2.0.0",
-    "zod": "^4.0.0"
+    "zod": "^4.0.0",
+    "@neondatabase/auth": "0.6.0-beta",
+    "@neondatabase/auth-ui": "0.4.0-beta"
   },
   "devDependencies": {
     "@types/react": "^19.1.0",
