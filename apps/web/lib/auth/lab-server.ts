@@ -12,7 +12,7 @@ export async function getLabIdentity(){
  if(!auth)return null;
  try{
   const response=await auth.getSession();
-  const user=response?.user;
+  const user=response && 'data' in response ? response.data?.user : null;
   if(!user?.id || !user.email) return null;
   return {issuer:process.env.NEON_AUTH_BASE_URL!,subject:user.id,
           email:user.email,emailVerified:user.emailVerified===true,
