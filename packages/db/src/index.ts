@@ -41,3 +41,5 @@ export { resolveActiveMcpGrant, listTenantChatgptContributions } from "./tenant-
 export { listVerifiedIdentityOrganisations } from "./tenant-workspaces";
 
 export { getTenantLookoutOverview, getTenantLookoutProject } from "./tenant-lookout-overview";
+
+export { createAccountProject, confirmAccountProjectStatus } from "./tenant-portfolio-actions";
