@@ -33,3 +33,5 @@ export { submitAgentContribution, listPortfolioContributions, getPortfolioIdForO
 export { submitChatgptContribution, listChatgptContributions } from "./chatgpt-contribution-repository";
 
 export { resolveOrganisationMember, authorisedPortfolioProject, listTenantPortfolioProjects } from "./tenant-repository";
+
+export { onboardVerifiedIdentity } from "./organisation-onboarding";
