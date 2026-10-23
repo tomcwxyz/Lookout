@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { getLookoutContext } from "../../../lib/auth/lookout-context";
+import { getAccountLogicalPortfolio } from "../../../lib/auth/lookout-data";
 import { notFound } from "next/navigation";
 import { databaseConfigured, getProject, getLinkedResources, listAgentCheckpoints, listAgentTokens } from "@lookout/db";
 import { IdeaForm } from "./idea-form";
@@ -13,10 +15,15 @@ export default async function ProjectDetail({ params }: { params: Promise<{ id: 
   const { id } = await params;
   const number = Number(id);
   if (!databaseConfigured() || !Number.isSafeInteger(number) || number <= 0) notFound();
+  const account = await getLookoutContext();
+  if (account.mode === "account") {
+    const allowed = await getAccountLogicalPortfolio(account.organisationId);
+    if (!allowed.projects.some(p => p.repositories.some(r => r.repositoryObservationId === number))) notFound();
+  }
   const { project, findings, ideas, decisions } = await getProject(number);
   if (!project) notFound();
   const [linkedResources, checkpoints, tokens] = await Promise.all([
-    getLinkedResources(number).catch(() => []), listAgentCheckpoints(number,24), listAgentTokens(number)
+    getLinkedResources(number).catch(() => []), listAgentCheckpoints(number,24), account.mode === "legacy" ? listAgentTokens(number) : Promise.resolve([])
   ]);
   const snapshot = project.snapshot;
   const work = deriveWorkHandover(snapshot);
@@ -24,9 +31,9 @@ export default async function ProjectDetail({ params }: { params: Promise<{ id: 
     <main className="detail-layout">
       <Link href="/" className="back-link">← Portfolio overview</Link>
       <div className="detail-header"><div><span className="eyebrow">PROJECT / {snapshot.provider.toUpperCase()}</span><h1>{project.name}</h1><p>{project.description || snapshot.slug}</p></div><a className="external-link" href={project.url} target="_blank" rel="noopener noreferrer">Open repository ↗</a></div>
-      <WorkHandoverPanel handover={work} decisions={decisions} projectId={project.id} />
+      <WorkHandoverPanel handover={work} decisions={decisions} projectId={project.id} readOnly={account.mode === "account"} />
       <ProjectActivity checkpoints={checkpoints} merges={snapshot.recentMerges ?? []} decisions={decisions} />
-      <AgentConnections projectId={project.id} initialTokens={tokens.map(token => ({...token,createdAt:token.createdAt.toISOString(),revokedAt:token.revokedAt?.toISOString() ?? null}))} />
+      {account.mode === "legacy" && <AgentConnections projectId={project.id} initialTokens={tokens.map(token => ({...token,createdAt:token.createdAt.toISOString(),revokedAt:token.revokedAt?.toISOString() ?? null}))} />}
       <section className="project-summary"><span className="eyebrow">TECHNICAL OBSERVATION</span><p>{project.ruleSummary}</p>{project.aiBrief && <div className="ai-brief"><span className="eyebrow">◈ AGENT BRIEF · AI-GENERATED</span><p>{project.aiBrief}</p></div>}</section>
       <div className="detail-columns">
         <section className="panel detail-panel">
@@ -53,7 +60,7 @@ export default async function ProjectDetail({ params }: { params: Promise<{ id: 
         </section>
         <section className="panel detail-panel">
           <div className="panel-heading"><h2>Ideas and notes ({ideas.length})</h2></div>
-          <IdeaForm projectId={project.id} />
+          {account.mode === "legacy" && <IdeaForm projectId={project.id} />}
           {ideas.map(idea => <div key={idea.id} className="detail-row"><div><strong>{idea.title}</strong>{idea.note && <small>{idea.note}</small>}</div><span className="inline-label">{idea.status}</span></div>)}
           {ideas.length === 0 && <p className="muted padded">Capture an idea without creating a formal GitHub issue.</p>}
         </section>
