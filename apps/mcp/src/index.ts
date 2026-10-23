@@ -128,6 +128,42 @@ function createServer() {
           trust:"agent_reported"})),openPullRequests:d.openPullRequests,humanDecisions:d.humanDecisions});}
       catch(err){return {isError:true,content:[{type:"text",text:String(err)}]};}
     });
+    // A human-readable session note is the preferred write format. Translate it to
+    // the existing v1 checkpoint API, preserving all existing clients and storage.
+    // Technical evidence continues to be observed independently by Lookout.
+    server.registerTool("lookout_record_session", {
+      description:"At the end of meaningful work, record a concise, plain-English session handover: aim, outcomes, unfinished work, decisions and the next action. Do not repeat GitHub technical details. Only report what actually happened; unverified work remains agent-reported. Do not submit on every tool call.",
+      inputSchema:z.object({
+        eventId:z.string().min(6).max(120),
+        agent:z.string().min(1).max(80),
+        title:z.string().min(1).max(180),
+        aim:z.string().min(1).max(1000),
+        done:z.array(z.string().min(1).max(300)).max(12),
+        notDone:z.array(z.string().min(1).max(300)).max(12),
+        decisions:z.array(z.string().min(1).max(300)).max(10),
+        next:z.string().min(1).max(300),
+        context:z.string().max(1500).optional(),
+        blockers:z.array(z.string().min(1).max(300)).max(10).optional(),
+        evidenceUrl:z.string().url().optional()
+      })
+    }, async(note)=>{
+      const checkpoint={
+        version:1 as const,eventId:note.eventId,agent:note.agent,title:note.title,
+        objective:note.aim,
+        summary:note.context?.trim() || [
+          "Aim: "+note.aim,
+          "Next: "+note.next
+        ].join("\n"),
+        implemented:note.done,
+        remaining:[...note.notDone, "Next: "+note.next].slice(0,12),
+        tests:[],
+        decisions:note.decisions,
+        blockers:note.blockers||[],
+        ...(note.evidenceUrl?{prUrl:note.evidenceUrl}:{})
+      };
+      try{return result(await remote("/api/agent/checkpoints",{checkpoint}));}
+      catch(err){return {isError:true,content:[{type:"text",text:String(err)}]};}
+    });
     server.registerTool("lookout_propose_checkpoint", {
       description:"Submit a bounded agent-reported progress checkpoint. Does NOT confirm task completion or overwrite human decisions. Do not include secrets or raw conversation transcripts.",
       inputSchema:z.object({
