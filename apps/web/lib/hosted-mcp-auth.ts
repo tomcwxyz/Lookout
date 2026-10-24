@@ -1,10 +1,12 @@
 import { createHash, timingSafeEqual } from "node:crypto";
-import { authoriseAgentToken, authoriseOAuthAccessToken } from "@lookout/db";
+import { authoriseAgentToken, authoriseOAuthAccessToken, authoriseOrganisationMcpReadToken } from "@lookout/db";
 import { RESOURCE } from "./chatgpt-oauth";
 
-export type HostedMcpIdentity =
+export type LegacyHostedMcpIdentity =
   | { scope: "owner"; canContribute?: boolean; clientId?: string }
   | { scope: "project"; projectId: number; tokenId: number };
+
+export type HostedMcpIdentity = LegacyHostedMcpIdentity | {scope:"organisation";organisationId:number;connectionId:number;userId:number;name:string};
 
 export function ownerTokenMatches(raw: string | null, secret: string | undefined): boolean {
   if (!raw || !secret || secret.length < 48 || raw.length > 512) return false;
@@ -24,6 +26,11 @@ export async function authoriseHostedMcp(
 ): Promise<HostedMcpIdentity | null> {
   const raw = mcpBearer(header);
   if (!raw) return null;
+  if (raw.startsWith("lko_")) {
+    if (process.env.LOOKOUT_MULTIUSER_LAB !== "enabled") return null;
+    const session=await authoriseOrganisationMcpReadToken(raw);
+    return session ? {scope:"organisation",...session} : null;
+  }
   if (ownerTokenMatches(raw, secret)) return { scope: "owner" };
   if (raw.startsWith("lk_oat_")) {
     const session = await authoriseOAuthAccessToken(raw, RESOURCE);
