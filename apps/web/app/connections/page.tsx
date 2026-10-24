@@ -1,20 +1,70 @@
 import Link from "next/link";
 import { getLookoutContext } from "../../lib/auth/lookout-context";
+import { getWorkspaceSourceSummary, listWorkspaceReports, getOrganisationConnectionOverview } from "@lookout/db";
 
-export const dynamic = "force-dynamic";
+export const dynamic="force-dynamic";
+const displayDate=(input:string|null)=>input?new Date(input).toLocaleString("en-GB",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}):"No successful sync recorded";
 
 export default async function Connections() {
-  const account = await getLookoutContext();
-  if (account.mode === "account") return <main className="detail-layout">
-    <Link href="/" className="back-link">← Lookout overview</Link>
-    <div className="detail-header"><div><span className="eyebrow">LOOKOUT / CONNECTIONS</span>
-      <h1>Connected assistants and services</h1><p>{account.name} · your organisation workspace</p></div></div>
-    <section className="panel detail-panel"><div className="panel-heading"><h2>Organisation connections</h2></div>
-      <div className="padded"><p>This workspace uses the same Lookout interface, with accounts and separate project permissions.</p>
-      <p>Organisation-specific MCP authorisation and provider tokens are not yet enabled. We will not reuse the original owner-wide token for other accounts.</p>
-      <p className="work-caution">Existing single-owner ChatGPT and agent connections remain available in the legacy account. No additional permissions have been granted by signing up.</p></div>
-    </section></main>;
-
+ const account=await getLookoutContext();
+ if(account.mode==="account"){
+  const [sources,connectors,reports]=await Promise.all([
+    getWorkspaceSourceSummary(account.organisationId).catch(()=>null),
+    getOrganisationConnectionOverview(account.organisationId).catch(()=>null),
+    listWorkspaceReports(account.organisationId,5).catch(()=>[])
+  ]);
+  return <main className="detail-layout lookout-connections">
+   <Link className="back-link" href="/">← Lookout overview</Link>
+   <header className="detail-header">
+    <div><span className="eyebrow">LOOKOUT / {account.name.toUpperCase()}</span>
+      <h1>Connections and observations</h1>
+      <p>Understand what Lookout has observed, what is connected to this organisation and what still needs setting up.</p>
+    </div>
+   </header>
+   <section className="metrics" aria-label="Connection overview">
+    <div className="metric"><span>Tracked repositories</span><strong>{sources?.repositories??"—"}</strong><small>Existing, granted GitHub observations</small></div>
+    <div className="metric"><span>Linked cloud resources</span><strong>{sources?.linkedResources??"—"}</strong><small>Recorded Neon and Vercel resources</small></div>
+    <div className="metric"><span>MCP connections</span><strong>{connectors?.active??"—"}</strong><small>Active organisation-scoped connections</small></div>
+    <div className="metric"><span>Recent agent reports</span><strong>{reports.length}</strong><small>Latest 5 organisation contributions</small></div>
+   </section>
+   <div className="detail-columns">
+    <section className="panel detail-panel">
+     <div className="panel-heading"><div><span className="eyebrow">OBSERVATION HISTORY</span><h2>Source coverage</h2></div><span className="count-pill">Read-only evidence</span></div>
+     <div className="lookout-connection-body">
+      <p>Lookout retains observations from your assigned GitHub repositories and linked cloud resources. These are historical records, not proof that your account has a current provider connection.</p>
+      <div className="lookout-connection-source"><div><strong>GitHub</strong><small>{sources?.repositories??"—"} repositories · {sources?.openFindings??"—"} open findings</small></div><span>Last scan: {displayDate(sources?.githubSync??null)}</span></div>
+      <div className="lookout-connection-source"><div><strong>Neon</strong><small>Recorded database and branch observations</small></div><span>Last scan: {displayDate(sources?.neonSync??null)}</span></div>
+      <div className="lookout-connection-source"><div><strong>Vercel</strong><small>Recorded deployments and service observations</small></div><span>Last scan: {displayDate(sources?.vercelSync??null)}</span></div>
+      <Link href="/infrastructure" className="back-link">Explore infrastructure evidence →</Link>
+     </div>
+    </section>
+    <section className="panel detail-panel">
+     <div className="panel-heading"><div><span className="eyebrow">ASSISTANTS AND AGENTS</span><h2>Project handovers</h2></div><Link href="/agents" className="count-pill">View all →</Link></div>
+     <div className="lookout-connection-body">
+      <p>Reports written by ChatGPT or coding agents preserve what was attempted, what remains and what needs attention. Agent reports are not independent verification.</p>
+      {reports.length?reports.map(report=><div className="lookout-connection-source" key={report.id}><div>
+        <strong>{report.projectName}</strong><small>{report.title}</small>
+        <small>{report.blockerCount} reported blockers · {report.remainingCount} remaining items</small></div>
+        <Link href={"/portfolio/"+report.portfolioId} className="back-link">Review →</Link>
+      </div>):<div className="lookout-connection-empty"><strong>No recent agent handovers</strong><p>There are no recent reports assigned to this organisation. That does not mean the projects have no unfinished work.</p></div>}
+      <Link href="/agents" className="back-link">Explore agent activity →</Link>
+     </div>
+    </section>
+   </div>
+   <section className="panel detail-panel lookout-connection-manage">
+    <div className="panel-heading"><div><span className="eyebrow">ORGANISATION ACCESS</span><h2>MCP connections</h2></div><span className="count-pill">{connectors?.active??0} active</span></div>
+    <div className="lookout-connection-body">
+     {connectors?.connections.length?connectors.connections.map(c=><div className="lookout-connection-source" key={c.id}>
+       <div><strong>{c.name}</strong><small>{c.projects} project-specific grants · {c.scopes} distinct capabilities</small></div>
+       <span>{c.active?"Connected":"Revoked"}</span>
+     </div>):<div className="lookout-connection-empty"><strong>No organisation MCP connections enabled yet</strong>
+      <p>The existing personal Lookout MCP and coding-agent credentials remain separate. They are not automatically shared with everyone in this workspace.</p></div>}
+     <p className="work-caution">New MCP authorisations and organisation-level provider scanning are disabled until secure connection creation, project grants and revocation are wired into the account flow. The existing owner-wide credential is never issued from this screen.</p>
+    </div>
+   </section>
+   <footer className="footer"><span>LOOKOUT / {account.name.toUpperCase()}</span><span>Observation ≠ connection · Report ≠ confirmation</span></footer>
+  </main>;
+ }
   // This is server-side only: never render the credential itself.
   const configured = (process.env.LOOKOUT_MCP_OWNER_TOKEN?.length ?? 0) >= 48;
   return (
