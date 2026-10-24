@@ -1,9 +1,10 @@
 "use client";
 import {useMemo,useState} from "react";
 import Link from "next/link";
+import {composeWorkspacePriorities} from "../../lib/attention-digest";
 import "../demo/demo.css";
 
-type Finding={id:number;projectId:number;project:string;severity:string;title:string;explanation:string;url:string;at:string};
+type Finding={id:number;projectId:number;project:string;kind:string;severity:string;title:string;explanation:string;url:string;at:string};
 type Project={id:number;name:string;description:string;status:string|null;repositories:number};
 type Report={id:string;portfolioId:number;projectName:string;agent:string;kind:string;title:string;summary:string;nextStep:string;recordedAt:string;blockerCount:number;remainingCount:number};
 type Resource={id:number;name:string;provider:string;kind:string;url:string;observedAt:string};
@@ -17,6 +18,8 @@ export function WorkspaceExplorer({findings,projects,reports,resources}:{
  const [search,setSearch]=useState("");
  const attention=useMemo(()=>[...findings].sort((a,b)=>(a.severity==="critical"?0:1)-(b.severity==="critical"?0:1)||Date.parse(b.at)-Date.parse(a.at)),[findings]);
  const filteredFindings=attention.filter(item=>selected===null||item.projectId===selected);
+ const priorities=useMemo(()=>composeWorkspacePriorities(findings,reports,undefined,8),[findings,reports]);
+ const selectedPriorities=priorities.filter(item=>selected===null||item.projectId===selected);
  const filteredReports=reports.filter(item=>selected===null||item.portfolioId===selected);
  const agentFollowUps=filteredReports.filter(r=>r.blockerCount>0||r.remainingCount>0).sort((a,b)=>b.blockerCount-a.blockerCount||Date.parse(b.recordedAt)-Date.parse(a.recordedAt));
  const filteredProjects=projects.filter(item=>(selected===null||item.id===selected)&&item.name.toLowerCase().includes(search.trim().toLowerCase()));
@@ -41,6 +44,22 @@ export function WorkspaceExplorer({findings,projects,reports,resources}:{
     <h2>{tab==="attention"?"Needs your review":tab==="changes"?"What changed":tab==="agents"?"Agent handovers":"Your projects"}</h2></div>
     {tab==="projects"?<input aria-label="Search your projects" className="demo-search" placeholder="Search projects…" value={search} onChange={e=>setSearch(e.target.value)}/>:<span className="count-pill">{count} {count===1?"record":"records"}</span>}
    </div>
+   {tab==="attention"&&selectedPriorities.length>0&&<section aria-label="Suggested priorities" className="lookout-priority-section">
+     <div className="lookout-priority-heading"><div><span className="eyebrow">A SHORTLIST, NOT ANOTHER ALERT FEED</span>
+      <h3>What may need attention first</h3><p>Grouped source findings and recent agent reports. Rank is a deterministic suggestion, not an AI decision or confirmation.</p></div>
+      <span className="count-pill">{selectedPriorities.length} priorities</span></div>
+     <div className="lookout-priority-grid">
+      {selectedPriorities.map(item=><article className="lookout-priority-card" key={item.key}>
+       <div className="lookout-priority-meta"><span className={item.level==="urgent"?"mini-alert":"mini-clear"}>{item.level==="urgent"?"Critical evidence":"Review suggested"}</span>
+        <button type="button" onClick={()=>{setSelected(item.projectId);setTab("changes")}} className="back-link">{item.projectName}</button></div>
+       <h4>{item.title}</h4><p>{item.explanation}</p>
+       <p className="lookout-priority-next"><strong>Next:</strong> {item.suggestedAction}</p>
+       <div className="lookout-priority-sources">{item.sources.map(e=><a key={e.url+e.type} href={e.url}
+          target={e.url.startsWith("/")?undefined:"_blank"} rel={e.url.startsWith("/")?undefined:"noopener noreferrer"}>
+         {e.type==="agent"?"Unverified report":"Source evidence"} ↗</a>)}</div>
+      </article>)}
+     </div>
+    </section>}
    {tab==="attention"&&agentFollowUps.length>0&&<div className="lookout-agent-signals" style={{borderBottom:"1px solid #e4eae6",background:"#f7faf8",padding:"15px 23px"}}>
     <span className="eyebrow">REPORTED BY AGENTS · NEEDS VERIFICATION</span>
     <p className="work-caution" style={{margin:"7px 0 12px"}}>These handovers flag reported blockers or unfinished work. They are suggestions to investigate, not confirmed faults or automatically accepted priorities.</p>
