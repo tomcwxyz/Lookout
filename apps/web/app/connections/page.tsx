@@ -1,4 +1,6 @@
 import Link from "next/link";
+import {McpKeyCreator} from "./mcp-key-creator";
+import {revokeReadOnlyConnection} from "./actions";
 import { getLookoutContext } from "../../lib/auth/lookout-context";
 import { getWorkspaceSourceSummary, listWorkspaceReports, getOrganisationConnectionOverview } from "@lookout/db";
 
@@ -54,12 +56,21 @@ export default async function Connections() {
    <section className="panel detail-panel lookout-connection-manage">
     <div className="panel-heading"><div><span className="eyebrow">ORGANISATION ACCESS</span><h2>MCP connections</h2></div><span className="count-pill">{connectors?.active??0} active</span></div>
     <div className="lookout-connection-body">
+     <p>Organisation owners and admins can issue short-lived, read-only MCP credentials for compatible clients. Each key is restricted to this organisation's explicitly assigned projects and can be revoked at any time.</p>
+     {(["owner","admin"].includes(account.role))&&<McpKeyCreator/>}
+     <div className="lookout-connection-list" style={{marginTop:22}}>
      {connectors?.connections.length?connectors.connections.map(c=><div className="lookout-connection-source" key={c.id}>
-       <div><strong>{c.name}</strong><small>{c.projects} project-specific grants · {c.scopes} distinct capabilities</small></div>
-       <span>{c.active?"Connected":"Revoked"}</span>
-     </div>):<div className="lookout-connection-empty"><strong>No organisation MCP connections enabled yet</strong>
-      <p>The existing personal Lookout MCP and coding-agent credentials remain separate. They are not automatically shared with everyone in this workspace.</p></div>}
-     <p className="work-caution">New MCP authorisations and organisation-level provider scanning are disabled until secure connection creation, project grants and revocation are wired into the account flow. The existing owner-wide credential is never issued from this screen.</p>
+       <div><strong>{c.name}</strong>
+        <small>{c.active?"Active · read-only":"Revoked or expired"} · Expires {c.expiresAt?displayDate(c.expiresAt):"unknown"}</small>
+       </div>
+       {c.active&&["owner","admin"].includes(account.role)?<form action={revokeReadOnlyConnection}>
+         <input type="hidden" name="connectionId" value={c.id}/>
+         <button className="lookout-revoke-button" type="submit" aria-label={"Revoke "+c.name}>Revoke</button>
+       </form>:<span>{c.active?"Active":"Inactive"}</span>}
+     </div>):<div className="lookout-connection-empty"><strong>No read-only MCP keys created</strong>
+      <p>The existing personal Lookout MCP and coding-agent credentials remain separate. Create an organisation key only for a client you trust.</p></div>}
+     </div>
+     <p className="work-caution">These keys support Bearer-compatible MCP clients. Organisation-aware ChatGPT OAuth, coding-agent write access and provider scanning are not yet enabled. Creating a read key does not grant any of those permissions.</p>
     </div>
    </section>
    <footer className="footer"><span>LOOKOUT / {account.name.toUpperCase()}</span><span>Observation ≠ connection · Report ≠ confirmation</span></footer>
