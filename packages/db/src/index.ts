@@ -48,3 +48,6 @@ export { listWorkspaceReports, getWorkspaceSourceSummary } from './tenant-worksp
 export type { WorkspaceReport } from './tenant-workspace-intelligence';
 
 export { getOrganisationConnectionOverview } from "./organisation-connection-overview";
+
+export { issueOrganisationMcpReadToken, authoriseOrganisationMcpReadToken, revokeOrganisationMcpConnection, listOrganisationMcpFindings } from './organisation-mcp-auth';
+export type { OrganisationMcpSession } from './organisation-mcp-auth';
