@@ -5,7 +5,7 @@ import "../demo/demo.css";
 
 type Finding={id:number;projectId:number;project:string;severity:string;title:string;explanation:string;url:string;at:string};
 type Project={id:number;name:string;description:string;status:string|null;repositories:number};
-type Report={id:string;portfolioId:number;projectName:string;agent:string;kind:string;title:string;summary:string;nextStep:string;recordedAt:string};
+type Report={id:string;portfolioId:number;projectName:string;agent:string;kind:string;title:string;summary:string;nextStep:string;recordedAt:string;blockerCount:number;remainingCount:number};
 type Resource={id:number;name:string;provider:string;kind:string;url:string;observedAt:string};
 type View="attention"|"changes"|"agents"|"projects";
 const labelDate=(v:string)=>Number.isNaN(Date.parse(v))?"Date unavailable":new Date(v).toLocaleString("en-GB",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
@@ -18,6 +18,7 @@ export function WorkspaceExplorer({findings,projects,reports,resources}:{
  const attention=useMemo(()=>[...findings].sort((a,b)=>(a.severity==="critical"?0:1)-(b.severity==="critical"?0:1)||Date.parse(b.at)-Date.parse(a.at)),[findings]);
  const filteredFindings=attention.filter(item=>selected===null||item.projectId===selected);
  const filteredReports=reports.filter(item=>selected===null||item.portfolioId===selected);
+ const agentFollowUps=filteredReports.filter(r=>r.blockerCount>0||r.remainingCount>0).sort((a,b)=>b.blockerCount-a.blockerCount||Date.parse(b.recordedAt)-Date.parse(a.recordedAt));
  const filteredProjects=projects.filter(item=>(selected===null||item.id===selected)&&item.name.toLowerCase().includes(search.trim().toLowerCase()));
  const recentChanges=useMemo(()=>[
   ...findings.map(item=>({key:"finding-"+item.id,kind:"GitHub observation",title:item.title,details:item.explanation,at:item.at,projectId:item.projectId,url:item.url})),
@@ -40,6 +41,15 @@ export function WorkspaceExplorer({findings,projects,reports,resources}:{
     <h2>{tab==="attention"?"Needs your review":tab==="changes"?"What changed":tab==="agents"?"Agent handovers":"Your projects"}</h2></div>
     {tab==="projects"?<input aria-label="Search your projects" className="demo-search" placeholder="Search projects…" value={search} onChange={e=>setSearch(e.target.value)}/>:<span className="count-pill">{count} {count===1?"record":"records"}</span>}
    </div>
+   {tab==="attention"&&agentFollowUps.length>0&&<div className="lookout-agent-signals" style={{borderBottom:"1px solid #e4eae6",background:"#f7faf8",padding:"15px 23px"}}>
+    <span className="eyebrow">REPORTED BY AGENTS · NEEDS VERIFICATION</span>
+    <p className="work-caution" style={{margin:"7px 0 12px"}}>These handovers flag reported blockers or unfinished work. They are suggestions to investigate, not confirmed faults or automatically accepted priorities.</p>
+    {agentFollowUps.slice(0,5).map(report=><div className="intelligence-entry" key={report.id} style={{padding:"11px 0"}}>
+     <div><strong>{report.projectName}: {report.title}</strong><span className="mini-alert">{report.blockerCount} reported blockers · {report.remainingCount} remaining</span></div>
+     <p><strong>Review next:</strong> {report.nextStep}</p>
+     <Link className="back-link" href={"/portfolio/"+report.portfolioId}>Review project evidence →</Link>
+    </div>)}
+   </div>}
    {tab==="attention"&&(filteredFindings.length?filteredFindings.slice(0,60).map(item=><article key={item.id} className="attention-row">
     <span className={item.severity==="critical"?"signal critical":"signal warning"}/>
     <div className="attention-body"><span className="overline">{item.project} · {labelDate(item.at)} · GitHub observation</span>
