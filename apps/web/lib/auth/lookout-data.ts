@@ -1,3 +1,4 @@
+import { cache } from "react";
 import {
  getPortfolio, getLogicalPortfolio, getInfrastructurePortfolio,
  listTenantPortfolioProjects
@@ -7,7 +8,7 @@ import {
  * These do not change the legacy single-owner schema or the page design.
  * No raw global read result is returned to the browser.
  */
-export async function getAccountLogicalPortfolio(organisationId: number) {
+export const getAccountLogicalPortfolio = cache(async function getAccountLogicalPortfolio(organisationId: number) {
  const [raw, grants] = await Promise.all([
    getLogicalPortfolio(),listTenantPortfolioProjects(organisationId)
  ]);
@@ -24,25 +25,25 @@ export async function getAccountLogicalPortfolio(organisationId: number) {
    detailedRepositories:inventory.filter(r=>r.detailedAt!=null).length,
    privateRepositories:inventory.filter(r=>r.visibility==="private").length,
    inspectionFailures:inventory.filter(r=>r.inspectionError!=null).length,
-   lastInventoryAt:null,
+   lastInventoryAt:raw.coverage.lastInventoryAt,
    nextOffset:0,
    note:"Only repositories explicitly assigned to this organisation are included."
   }
  };
-}
+});
 
-export async function getAccountObservedPortfolio(organisationId:number) {
+export const getAccountObservedPortfolio = cache(async function getAccountObservedPortfolio(organisationId:number) {
  const [raw,logical]=await Promise.all([getPortfolio(),getAccountLogicalPortfolio(organisationId)]);
  const permittedIds=new Set(logical.projects.flatMap(p=>p.repositories.map(r=>r.repositoryObservationId).filter((id):id is number=>id!==null)));
  return {
   projects:raw.projects.filter(p=>permittedIds.has(p.id)),
   attention:raw.attention.filter(item=>permittedIds.has(item.projectId)),
   workDecisions:raw.workDecisions.filter(d=>permittedIds.has(d.projectId)),
-  latestRun:null
+  latestRun:raw.latestRun
  };
-}
+});
 
-export async function getAccountInfrastructure(organisationId:number) {
+export const getAccountInfrastructure = cache(async function getAccountInfrastructure(organisationId:number) {
  const [raw,logical]=await Promise.all([getInfrastructurePortfolio(),getAccountLogicalPortfolio(organisationId)]);
  const allowedKeys=new Set(logical.projects.flatMap(p=>p.infrastructure.map(resource=>resource.key)));
  const allowedObservedIds=new Set(logical.projects.flatMap(p=>p.repositories.map(r=>r.repositoryObservationId).filter((id):id is number=>id!==null)));
@@ -53,6 +54,6 @@ export async function getAccountInfrastructure(organisationId:number) {
   resources,
   findings:raw.findings.filter(f=>resourceIds.has(f.resourceId)),
   projects:raw.projects.filter(p=>allowedObservedIds.has(p.id)),
-  syncs:[null,null] as typeof raw.syncs
+  syncs:raw.syncs
  };
-}
+});
