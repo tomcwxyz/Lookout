@@ -4,7 +4,7 @@ import { getDatabase } from "./client";
 export type WorkspaceReport = {
  id:string;portfolioId:number;projectName:string;source:"agent"|"chatgpt";
  agent:string;kind:string;title:string;summary:string;nextStep:string;
- recordedAt:string;verified:false;
+ recordedAt:string;blockerCount:number;remainingCount:number;verified:false;
 };
 
 /** One bounded, tenant-filtered query instead of 2 calls per project. */
@@ -12,11 +12,13 @@ export async function listWorkspaceReports(organisationId:number,limit=50):Promi
  if(!Number.isSafeInteger(organisationId)||organisationId<=0)return [];
  const bounded=Math.max(1,Math.min(100,Math.trunc(limit)));
  const result=await getDatabase().execute(sql`
- SELECT id,portfolio_id,project_name,source,agent,kind,title,summary,next_step,recorded_at
+ SELECT id,portfolio_id,project_name,source,agent,kind,title,summary,next_step,blocker_count,remaining_count,recorded_at
  FROM (
   SELECT ('agent-'||c.id::text) id,c.portfolio_project_id portfolio_id,p.name project_name,
     'agent' source,c.agent,c.kind,c.title,COALESCE(c.payload->>'summary','') summary,
     COALESCE(NULLIF(c.payload->'remaining'->>0,''),'Review the agent handover') next_step,
+    jsonb_array_length(COALESCE(c.payload->'blockers','[]'::jsonb)) blocker_count,
+    jsonb_array_length(COALESCE(c.payload->'remaining','[]'::jsonb)) remaining_count,
     c.recorded_at
   FROM agent_contributions c
   JOIN lookout_project_access a ON a.portfolio_project_id=c.portfolio_project_id
@@ -27,6 +29,8 @@ export async function listWorkspaceReports(organisationId:number,limit=50):Promi
     'chatgpt' source,'ChatGPT' agent,c.kind,COALESCE(c.payload->>'title','ChatGPT contribution') title,
     COALESCE(c.payload->>'summary','') summary,
     COALESCE(NULLIF(c.payload->'remaining'->>0,''),'Review the ChatGPT report') next_step,
+    jsonb_array_length(COALESCE(c.payload->'blockers','[]'::jsonb)) blocker_count,
+    jsonb_array_length(COALESCE(c.payload->'remaining','[]'::jsonb)) remaining_count,
     c.recorded_at
   FROM chatgpt_contributions c
   JOIN lookout_project_access a ON a.portfolio_project_id=c.portfolio_project_id
@@ -39,7 +43,7 @@ export async function listWorkspaceReports(organisationId:number,limit=50):Promi
   source:String(row.source)==="agent"?"agent":"chatgpt",
   agent:String(row.agent),kind:String(row.kind),title:String(row.title),
   summary:String(row.summary),nextStep:String(row.next_step),
-  recordedAt:new Date(String(row.recorded_at)).toISOString(),verified:false as const
+  recordedAt:new Date(String(row.recorded_at)).toISOString(),blockerCount:Number(row.blocker_count),remainingCount:Number(row.remaining_count),verified:false as const
  }));
 }
 
