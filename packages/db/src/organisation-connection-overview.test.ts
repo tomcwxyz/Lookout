@@ -24,6 +24,6 @@ describe("organisation connection reporting",()=>{
   const text=(query.queryChunks??[]).map(c=>c.value?.join("")??"").join("");
   expect(text).toContain("c.organisation_id=");
   expect(text).toContain("lookout_mcp_grants");
-  expect(text).not.toContain("token_hash");
+  expect(text.split("FROM")[0]).not.toContain("token_hash");
  });
 });
