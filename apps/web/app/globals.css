@@ -522,3 +522,16 @@ h1,h2,h3,p { margin-top:0; }
  .lookout-connection-source>span{text-align:left;max-width:100%}
  .lookout-connection-body{padding:19px}
 }
+
+/* Read-only organisation MCP credential setup and revocation. */
+.lookout-mcp-creator{border:1px solid #d8e7dd;border-radius:11px;padding:21px;background:#f8fbf8}
+.lookout-mcp-creator>p{font-size:12px;color:#5d7968;line-height:1.6}
+.lookout-mcp-creator .portfolio-form{max-width:480px;gap:8px;margin:0}
+.lookout-mcp-creator .portfolio-form button{justify-self:start}
+.lookout-mcp-onetime{background:#fff9ed;border:1px solid #e6cc8e;border-radius:9px;padding:16px;margin:17px 0}
+.lookout-mcp-onetime>strong{font-size:13px;color:#5c451f}
+.lookout-mcp-onetime p{font-size:11px;color:#786444;margin:10px 0}
+.lookout-mcp-token{display:block;padding:12px;background:white;border-radius:6px;max-width:100%;overflow-wrap:anywhere;font-size:11px}
+.lookout-mcp-onetime button,.lookout-revoke-button{border:0;background:#245d4c;color:white;border-radius:7px;padding:9px 12px;font-size:11px;margin-top:12px}
+.lookout-revoke-button{background:#f1e7e2;color:#80432e;border:1px solid #e3cabf;margin-top:0}
+.lookout-mcp-endpoint code{overflow-wrap:anywhere;font-size:11px}
