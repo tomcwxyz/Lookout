@@ -46,3 +46,5 @@ export { createAccountProject, confirmAccountProjectStatus } from "./tenant-port
 
 export { listWorkspaceReports, getWorkspaceSourceSummary } from './tenant-workspace-intelligence';
 export type { WorkspaceReport } from './tenant-workspace-intelligence';
+
+export { getOrganisationConnectionOverview } from "./organisation-connection-overview";
