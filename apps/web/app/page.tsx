@@ -4,7 +4,7 @@ import { getAccountLogicalPortfolio, getAccountObservedPortfolio, getAccountInfr
 import { ScanControls } from "./components/scan-controls";
 import { deriveWorkHandover } from "@lookout/core";
 import { workStageLabels, confirmedStageLabels, effectiveWorkStatus } from "./components/work-handover";
-import { databaseConfigured, getPortfolio, getInfrastructurePortfolio, getLogicalPortfolio, listPortfolioContributions, listChatgptContributions } from "@lookout/db";
+import { databaseConfigured, getPortfolio, getInfrastructurePortfolio, getLogicalPortfolio, listPortfolioContributions, listChatgptContributions, listWorkspaceReports, getWorkspaceSourceSummary } from "@lookout/db";
 
 export const dynamic = "force-dynamic";
 
@@ -27,11 +27,14 @@ export default async function Home() {
   }
   const infrastructure = databaseConfigured() ? await (organisationId !== null ? getAccountInfrastructure(organisationId) : getInfrastructurePortfolio()).catch(() => null) : null;
   const logical = databaseConfigured() ? await (organisationId !== null ? getAccountLogicalPortfolio(organisationId) : getLogicalPortfolio()).catch(() => null) : null;
+  const sourceSummary = organisationId !== null ? await getWorkspaceSourceSummary(organisationId).catch(() => null) : null;
   const infraAttention = infrastructure?.findings.length ?? 0;
-  const agentRecent = (await Promise.all((logical?.projects ?? []).map(async p => {
+  const legacyAgentRecent = organisationId !== null ? [] : (await Promise.all((logical?.projects ?? []).map(async p => {
  const [agents,chatgpt]=await Promise.all([listPortfolioContributions(p.id,5).catch(()=>[]),listChatgptContributions(p.id).catch(()=>[])]);
  return [...agents.map(a=>({id:"agent-"+a.id,agent:a.agent,title:a.title,summary:a.payload.summary,recordedAt:new Date(a.recordedAt)})),...chatgpt.map(c=>{const payload=c.payload as {title?:string;summary?:string};return {id:"chatgpt-"+c.id,agent:"ChatGPT",title:payload.title??"ChatGPT contribution",summary:payload.summary??"",recordedAt:new Date(String(c.recorded_at))};})];
  }))).flat().sort((a,b) => b.recordedAt.getTime()-a.recordedAt.getTime()).slice(0,5);
+  const agentRecent = organisationId === null ? legacyAgentRecent :
+    (await listWorkspaceReports(organisationId,5).catch(()=>[])).map(e=>({id:e.id,agent:e.agent,title:e.title,summary:e.summary,recordedAt:new Date(e.recordedAt)}));
   const allProjects = data?.projects ?? [];
   const items = data?.attention ?? [];
   const decisions = data?.workDecisions ?? [];
@@ -84,7 +87,18 @@ export default async function Home() {
 
         {(!databaseConfigured() || error) && <section className="notice"><strong>Connect your workspace</strong><p>{error ?? "Add DATABASE_URL and GITHUB_TOKEN to your .env file, apply the migration, then run the synchronisation worker. No sample data is shown as if it were real."}</p><code>npm run db:migrate &amp;&amp; npm run sync</code></section>}
 
-        {account.mode === "legacy" ? <ScanControls /> : <section className="scan-controls"><div className="scan-header"><div><strong>Observation sources</strong><span>Your existing linked GitHub, Neon and Vercel observations are available here. Account-scoped scanning needs its own provider connections before it can be enabled.</span></div></div></section>}
+        {account.mode === "legacy" ? <ScanControls /> : <section className="panel lookout-source-status" aria-label="Observed sources" style={{marginTop:22,padding:22}}>
+  <div className="panel-heading" style={{padding:"0 0 16px",marginBottom:16}}><div><span className="eyebrow">OBSERVED EVIDENCE</span><h2>Connected source observations</h2></div>
+  <span className="count-pill">Existing source history · read-only</span></div>
+  <p className="work-caution">These are recorded observations, not live provider connections for this account. Scanning new data remains disabled until your organisation has its own provider credentials.</p>
+  {sourceSummary ? <div className="metrics" style={{margin:"16px 0 0"}}>
+   <div className="metric"><span>GitHub repositories</span><strong>{sourceSummary.repositories}</strong><small>Last sync: {dateLabel(sourceSummary.githubSync)}</small></div>
+   <div className="metric"><span>Open GitHub findings</span><strong>{sourceSummary.openFindings}</strong><small>Review evidence below</small></div>
+   <div className="metric"><span>Linked cloud resources</span><strong>{sourceSummary.linkedResources}</strong><small>Neon: {dateLabel(sourceSummary.neonSync)}</small></div>
+   <div className="metric"><span>Vercel observation</span><strong style={{fontSize:19}}>Recorded</strong><small>Last sync: {dateLabel(sourceSummary.vercelSync)}</small></div>
+  </div> : <p className="notice">Source inventory could not be loaded. This does not mean your observations are absent.</p>}
+  <p style={{margin:"17px 0 0",fontSize:12}}><Link href="/infrastructure" className="back-link">Explore cloud resources →</Link> · <a href="#attention" className="back-link">Review findings ↓</a></p>
+ </section>}
 
 <section className="dashboard-intelligence" aria-label="Portfolio intelligence">
           <div className="intelligence-heading"><div><span className="eyebrow">TODAY / YOUR WORKSPACE</span><h2>Where things stand</h2><p>Start with the decisions that need you. Agent reports are labelled as claims, not verified changes.</p></div><Link href="/portfolio">Explore all projects →</Link></div>
