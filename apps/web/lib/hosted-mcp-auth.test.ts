@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 vi.mock("@lookout/db", () => ({
   authoriseOAuthAccessToken: vi.fn(async (raw: string) => raw === "lk_oat_" + "a".repeat(64) ? { scope: "lookout:read", clientId: "https://chatgpt.com/oauth/client.json" } : null),
+  authoriseOrganisationMcpReadToken: vi.fn(async (raw: string) => raw === "lko_" + "a".repeat(64)
+    ? {connectionId:31,organisationId:4,userId:7,name:"Good Ship"} : null),
   authoriseAgentToken: vi.fn(async (raw: string) =>
     raw === "lkp_" + "a".repeat(64) ? { id: 1, projectId: 7 } : null)
 }));
@@ -19,6 +21,21 @@ describe("hosted MCP access boundaries", () => {
     expect(mcpBearer("Basic " + owner)).toBeNull();
     expect(mcpBearer("Bearer " + owner + " other")).toBeNull();
     expect(mcpBearer(null)).toBeNull();
+  });
+  it("keeps organisation tokens disabled unless multi-user is enabled", async () => {
+    const old = process.env.LOOKOUT_MULTIUSER_LAB;
+    try {
+      delete process.env.LOOKOUT_MULTIUSER_LAB;
+      expect(await authoriseHostedMcp("Bearer lko_"+"a".repeat(64),owner)).toBeNull();
+      process.env.LOOKOUT_MULTIUSER_LAB="enabled";
+      expect(await authoriseHostedMcp("Bearer lko_"+"a".repeat(64),owner)).toEqual({
+        scope:"organisation",connectionId:31,organisationId:4,userId:7,name:"Good Ship"
+      });
+      expect(await authoriseHostedMcp("Bearer lko_"+"b".repeat(64),owner)).toBeNull();
+    } finally {
+      if(old===undefined)delete process.env.LOOKOUT_MULTIUSER_LAB;
+      else process.env.LOOKOUT_MULTIUSER_LAB=old;
+    }
   });
   it("distinguishes portfolio owner from scoped project tokens", async () => {
     expect(await authoriseHostedMcp("Bearer " + owner, owner)).toEqual({ scope: "owner" });
