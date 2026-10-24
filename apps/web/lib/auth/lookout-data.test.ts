@@ -38,21 +38,21 @@ describe("original Lookout scoped data adapters",()=>{
   expect(data.projects.map(p=>p.name)).toEqual(["Assigned"]);
   expect(data.coverage.privateRepositories).toBe(1);
   expect(data.coverage.inventoriedRepositories).toBe(1);
-  expect(data.coverage.lastInventoryAt).toBeNull();
+  expect(data.coverage.lastInventoryAt).not.toBeNull();
  });
  it("filters the unchanged original dashboard's findings, decisions and observed projects",async()=>{
   const data=await getAccountObservedPortfolio(7);
   expect(data.projects.map(p=>p.id)).toEqual([11]);
   expect(data.attention.map(p=>p.projectId)).toEqual([11]);
   expect(data.workDecisions.map(p=>p.projectId)).toEqual([11]);
-  expect(data.latestRun).toBeNull();
+  expect(data.latestRun).toEqual({id:50});
  });
  it("never shows a different organisation's Neon resources or cloud findings",async()=>{
   const data=await getAccountInfrastructure(7);
   expect(data.resources.map(p=>p.key)).toEqual(["neon:one"]);
   expect(data.findings.map(p=>p.resourceId)).toEqual([51]);
   expect(data.projects.map(p=>p.id)).toEqual([11]);
-  expect(data.syncs).toEqual([null,null]);
+  expect(data.syncs).toEqual([{provider:"neon"},{provider:"vercel"}]);
  });
  it("returns an empty original dashboard when no projects are granted",async()=>{
   vi.mocked(listTenantPortfolioProjects).mockResolvedValue([]);
