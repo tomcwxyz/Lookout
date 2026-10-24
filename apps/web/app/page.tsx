@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getLookoutContext } from "../lib/auth/lookout-context";
 import { getAccountLogicalPortfolio, getAccountObservedPortfolio, getAccountInfrastructure } from "../lib/auth/lookout-data";
 import { ScanControls } from "./components/scan-controls";
+import { WorkspaceExplorer } from "./components/workspace-explorer";
 import { deriveWorkHandover } from "@lookout/core";
 import { workStageLabels, confirmedStageLabels, effectiveWorkStatus } from "./components/work-handover";
 import { databaseConfigured, getPortfolio, getInfrastructurePortfolio, getLogicalPortfolio, listPortfolioContributions, listChatgptContributions, listWorkspaceReports, getWorkspaceSourceSummary } from "@lookout/db";
@@ -29,12 +30,13 @@ export default async function Home() {
   const logical = databaseConfigured() ? await (organisationId !== null ? getAccountLogicalPortfolio(organisationId) : getLogicalPortfolio()).catch(() => null) : null;
   const sourceSummary = organisationId !== null ? await getWorkspaceSourceSummary(organisationId).catch(() => null) : null;
   const infraAttention = infrastructure?.findings.length ?? 0;
+  const workspaceReports = organisationId!==null ? await listWorkspaceReports(organisationId,50).catch(()=>[]) : [];
   const legacyAgentRecent = organisationId !== null ? [] : (await Promise.all((logical?.projects ?? []).map(async p => {
  const [agents,chatgpt]=await Promise.all([listPortfolioContributions(p.id,5).catch(()=>[]),listChatgptContributions(p.id).catch(()=>[])]);
  return [...agents.map(a=>({id:"agent-"+a.id,agent:a.agent,title:a.title,summary:a.payload.summary,recordedAt:new Date(a.recordedAt)})),...chatgpt.map(c=>{const payload=c.payload as {title?:string;summary?:string};return {id:"chatgpt-"+c.id,agent:"ChatGPT",title:payload.title??"ChatGPT contribution",summary:payload.summary??"",recordedAt:new Date(String(c.recorded_at))};})];
  }))).flat().sort((a,b) => b.recordedAt.getTime()-a.recordedAt.getTime()).slice(0,5);
   const agentRecent = organisationId === null ? legacyAgentRecent :
-    (await listWorkspaceReports(organisationId,5).catch(()=>[])).map(e=>({id:e.id,agent:e.agent,title:e.title,summary:e.summary,recordedAt:new Date(e.recordedAt)}));
+    workspaceReports.slice(0,5).map(e=>({id:e.id,agent:e.agent,title:e.title,summary:e.summary,recordedAt:new Date(e.recordedAt)}));
   const allProjects = data?.projects ?? [];
   const items = data?.attention ?? [];
   const decisions = data?.workDecisions ?? [];
@@ -100,7 +102,13 @@ export default async function Home() {
   <p style={{margin:"17px 0 0",fontSize:12}}><Link href="/infrastructure" className="back-link">Explore cloud resources →</Link> · <a href="#attention" className="back-link">Review findings ↓</a></p>
  </section>}
 
-<section className="dashboard-intelligence" aria-label="Portfolio intelligence">
+{account.mode === "account" ? <WorkspaceExplorer
+ findings={items.map(item=>({id:item.id,projectId:logical?.projects.find(p=>p.repositories.some(r=>r.repositoryObservationId===item.projectId))?.id??0,
+  project:item.name,severity:item.severity,title:item.title,explanation:item.explanation,url:item.evidenceUrl,at:new Date(item.observedAt).toISOString()}))}
+ projects={(logical?.projects??[]).map(p=>({id:p.id,name:p.name,description:p.description??"",status:p.status,repositories:p.repositories.length}))}
+ reports={workspaceReports.map(e=>({id:e.id,portfolioId:e.portfolioId,projectName:e.projectName,agent:e.agent,kind:e.kind,title:e.title,summary:e.summary,nextStep:e.nextStep,recordedAt:e.recordedAt}))}
+ resources={(infrastructure?.resources??[]).map(r=>({id:r.id,name:r.name,provider:r.provider,kind:r.kind,url:r.url,observedAt:new Date(r.observedAt).toISOString()}))}
+ /> : <>\n<section className="dashboard-intelligence" aria-label="Portfolio intelligence">
           <div className="intelligence-heading"><div><span className="eyebrow">TODAY / YOUR WORKSPACE</span><h2>Where things stand</h2><p>Start with the decisions that need you. Agent reports are labelled as claims, not verified changes.</p></div><Link href="/portfolio">Explore all projects →</Link></div>
           <div className="intelligence-grid">
             <article className="panel intelligence-panel"><div className="panel-heading"><div><span className="eyebrow">ACTIONABLE WORK</span><h2>Needs attention</h2></div><span className="count-pill">{workQueue.length} projects</span></div>
@@ -156,6 +164,7 @@ export default async function Home() {
               })}</div>}
           </section>
         </div>
+        </>}
         <footer className="footer"><span>LOOKOUT / ALPHA 0.1</span><span>Evidence first. Suggestions, not assumptions.</span></footer>
       </main>
     </div>
