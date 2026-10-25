@@ -522,3 +522,31 @@ h1,h2,h3,p { margin-top:0; }
  .lookout-connection-source>span{text-align:left;max-width:100%}
  .lookout-connection-body{padding:19px}
 }
+
+/* Organisational attention briefs: explainable shortlist above raw evidence. */
+.lookout-priority-section{padding:20px 24px 25px;border-bottom:1px solid #dce9df;background:#f7faf7}
+.lookout-priority-heading{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:18px}
+.lookout-priority-heading h3{font-size:18px;letter-spacing:-.5px;margin:7px 0}
+.lookout-priority-heading p{font-size:12px;line-height:1.65;color:#667f6f;max-width:700px;margin:0}
+.lookout-priority-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.lookout-priority-card{padding:18px;border:1px solid #d9e6dc;border-radius:11px;background:white;min-width:0}
+.lookout-priority-meta{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.lookout-priority-meta .back-link{background:none;border:0;font-size:11px;cursor:pointer}
+.lookout-priority-card h4{font-size:15px;letter-spacing:-.3px;margin:13px 0 8px}
+.lookout-priority-card p{font-size:12px;color:#66806e;line-height:1.65;margin-bottom:10px}
+.lookout-priority-card .lookout-priority-next{background:#f0f6f1;padding:11px;border-radius:8px;color:#365947}
+.lookout-priority-sources{display:flex;gap:14px;flex-wrap:wrap;margin-top:13px}
+.lookout-priority-sources a{font-size:11px;font-weight:700;color:#26745b;text-decoration:underline;text-underline-offset:2px}
+@media(max-width:780px){.lookout-priority-grid{grid-template-columns:1fr}.lookout-priority-section{padding:18px}.lookout-priority-heading{align-items:flex-start}}
+/* Read-only organisation MCP credential setup and revocation. */
+.lookout-mcp-creator{border:1px solid #d8e7dd;border-radius:11px;padding:21px;background:#f8fbf8}
+.lookout-mcp-creator>p{font-size:12px;color:#5d7968;line-height:1.6}
+.lookout-mcp-creator .portfolio-form{max-width:480px;gap:8px;margin:0}
+.lookout-mcp-creator .portfolio-form button{justify-self:start}
+.lookout-mcp-onetime{background:#fff9ed;border:1px solid #e6cc8e;border-radius:9px;padding:16px;margin:17px 0}
+.lookout-mcp-onetime>strong{font-size:13px;color:#5c451f}
+.lookout-mcp-onetime p{font-size:11px;color:#786444;margin:10px 0}
+.lookout-mcp-token{display:block;padding:12px;background:white;border-radius:6px;max-width:100%;overflow-wrap:anywhere;font-size:11px}
+.lookout-mcp-onetime button,.lookout-revoke-button{border:0;background:#245d4c;color:white;border-radius:7px;padding:9px 12px;font-size:11px;margin-top:12px}
+.lookout-revoke-button{background:#f1e7e2;color:#80432e;border:1px solid #e3cabf;margin-top:0}
+.lookout-mcp-endpoint code{overflow-wrap:anywhere;font-size:11px}
