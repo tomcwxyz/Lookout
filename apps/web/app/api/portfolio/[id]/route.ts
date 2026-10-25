@@ -14,8 +14,8 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
       (typeof body.status !== "string" || !confirmedProjectStatuses.some(s => s === body.status))) ||
       typeof body.note !== "string" || body.note.length > 2000)
     return NextResponse.json({ error: "Invalid project status" }, { status: 400 });
+  const account=await getLookoutContext();
   try {
-    const account=await getLookoutContext();
     if(account.mode==="account") {
       if(account.role==="viewer") return NextResponse.json({error:"Insufficient organisation permissions"},{status:403});
       const saved=await confirmAccountProjectStatus(account.organisationId,id,body.status as string|null,body.note);
