@@ -104,7 +104,7 @@ export default async function Home() {
 
 {account.mode === "account" ? <WorkspaceExplorer
  findings={items.map(item=>({id:item.id,projectId:logical?.projects.find(p=>p.repositories.some(r=>r.repositoryObservationId===item.projectId))?.id??0,
-  project:item.name,severity:item.severity,title:item.title,explanation:item.explanation,url:item.evidenceUrl,at:new Date(item.observedAt).toISOString()}))}
+  project:item.name,kind:item.kind,severity:item.severity,title:item.title,explanation:item.explanation,url:item.evidenceUrl,at:new Date(item.observedAt).toISOString()}))}
  projects={(logical?.projects??[]).map(p=>({id:p.id,name:p.name,description:p.description??"",status:p.status,repositories:p.repositories.length}))}
  reports={workspaceReports.map(e=>({id:e.id,portfolioId:e.portfolioId,projectName:e.projectName,agent:e.agent,kind:e.kind,title:e.title,summary:e.summary,nextStep:e.nextStep,recordedAt:e.recordedAt,blockerCount:e.blockerCount,remainingCount:e.remainingCount}))}
  resources={(infrastructure?.resources??[]).map(r=>({id:r.id,name:r.name,provider:r.provider,kind:r.kind,url:r.url,observedAt:new Date(r.observedAt).toISOString()}))}
