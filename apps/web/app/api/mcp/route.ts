@@ -2,6 +2,7 @@ import { createMcpHandler } from "@modelcontextprotocol/server";
 import type { NextRequest } from "next/server";
 import { authoriseHostedMcp } from "../../../lib/hosted-mcp-auth";
 import { createHostedMcpServer } from "../../../lib/hosted-mcp";
+import { createOrganisationMcpServer } from "../../../lib/organisation-mcp";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -35,7 +36,8 @@ export async function POST(request: NextRequest) {
   if (Buffer.byteLength(body, "utf8") > 65536)
     return new Response("MCP request too large", { status: 413, headers: noStore });
 
-  const handler = createMcpHandler(() => createHostedMcpServer(identity), { responseMode: "json" });
+  const handler = createMcpHandler(() => identity.scope === "organisation"
+    ? createOrganisationMcpServer(identity) : createHostedMcpServer(identity), { responseMode: "json" });
   try {
     const upstream = new Request(request.url, {
       method: "POST", headers: request.headers, body
