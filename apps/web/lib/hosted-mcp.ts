@@ -8,7 +8,7 @@ import {
   listPortfolioContributions, submitAgentContribution, ContributionConflictError,
   ContributionScopeError, ContributionRateLimitError, submitChatgptContribution, listChatgptContributions
 } from "@lookout/db";
-import type { HostedMcpIdentity } from "./hosted-mcp-auth";
+import type { LegacyHostedMcpIdentity } from "./hosted-mcp-auth";
 
 const readOnly = { readOnlyHint: true, destructiveHint: false, openWorldHint: false } as const;
 function result(data: unknown) {
@@ -17,7 +17,7 @@ function result(data: unknown) {
 function failure(message: string) {
   return { isError: true, content: [{ type: "text" as const, text: message }] };
 }
-function authorisedProject(identity: HostedMcpIdentity, requested?: number): number | null {
+function authorisedProject(identity: LegacyHostedMcpIdentity, requested?: number): number | null {
   if (identity.scope === "project") {
     if (requested !== undefined && requested !== identity.projectId) return null;
     return identity.projectId;
@@ -38,7 +38,7 @@ function projectSummary(p: Awaited<ReturnType<typeof getProject>>["project"]) {
   };
 }
 
-export function createHostedMcpServer(identity: HostedMcpIdentity) {
+export function createHostedMcpServer(identity: LegacyHostedMcpIdentity) {
   const server = new McpServer({ name: "lookout", version: "0.3.0" });
 
   server.registerTool("lookout_whoami", {
