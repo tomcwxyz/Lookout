@@ -46,6 +46,18 @@ describe("organisation MCP key boundaries",()=>{
    expect(query).toContain(required);
   expect(query).not.toContain(token);
  });
+ it("fails closed after revocation, expiration or membership removal",async()=>{
+  const execute=vi.fn().mockResolvedValue([]);
+  vi.mocked(getDatabase).mockReturnValue({execute} as never);
+  const token="lko_"+"a".repeat(64);
+  expect(await authoriseOrganisationMcpReadToken(token)).toBeNull();
+  const query=JSON.stringify(execute.mock.calls[0][0]);
+  expect(query).toContain("c.revoked_at IS NULL");
+  expect(query).toContain("c.expires_at>now()");
+  expect(query).toContain("lookout_users u ON u.id=c.user_id AND u.disabled_at IS NULL");
+  expect(query).toContain("lookout_organisation_memberships");
+  expect(query).toContain("g.scope='portfolio:read'");
+ });
  it("cannot revoke a key without current authenticated user membership",async()=>{
   const execute=vi.fn().mockResolvedValue([]);
   vi.mocked(getDatabase).mockReturnValue({execute} as never);
