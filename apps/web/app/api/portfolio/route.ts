@@ -12,8 +12,8 @@ export async function POST(request: NextRequest) {
   if (typeof body.name !== "string" || body.name.trim().length < 1 || body.name.trim().length > 120
     || (body.description !== undefined && (typeof body.description !== "string" || body.description.length > 2000)))
     return NextResponse.json({ error: "Invalid project details" }, { status: 400 });
+  const context=await getLookoutContext();
   try {
-    const context=await getLookoutContext();
     if(context.mode==="account" && context.role==="viewer") return NextResponse.json({error:"Insufficient organisation permissions"},{status:403});
     const id = context.mode === "account"
       ? await createAccountProject(context.organisationId,body.name,body.description as string | undefined)
