@@ -1,10 +1,10 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
-vi.mock("next/headers",()=>({headers:vi.fn(),cookies:vi.fn()}));
+vi.mock("next/headers",()=>({cookies:vi.fn()}));
 vi.mock("next/navigation",()=>({redirect:vi.fn((target:string)=>{throw new Error("REDIRECT:"+target);})}));
 vi.mock("./lab-server",()=>({getLabIdentity:vi.fn()}));
 vi.mock("@lookout/db",()=>({listVerifiedIdentityOrganisations:vi.fn()}));
 
-import { headers, cookies } from "next/headers";
+import { cookies } from "next/headers";
 import { getLabIdentity } from "./lab-server";
 import { listVerifiedIdentityOrganisations } from "@lookout/db";
 import { getLookoutContext } from "./lookout-context";
@@ -17,7 +17,6 @@ describe("Lookout's shared account boundary",()=>{
  beforeEach(()=>{
   vi.clearAllMocks();process.env.LOOKOUT_MULTIUSER_LAB="enabled";
   process.env.LOOKOUT_DASHBOARD_TOKEN="test-password";
-  vi.mocked(headers).mockResolvedValue({get:()=>null} as never);
   vi.mocked(cookies).mockResolvedValue({get:()=>undefined} as never);
   vi.mocked(getLabIdentity).mockResolvedValue(verified);
   vi.mocked(listVerifiedIdentityOrganisations).mockResolvedValue([{id:7,slug:"team-a",name:"Team A",role:"owner"}]);
@@ -31,11 +30,9 @@ describe("Lookout's shared account boundary",()=>{
   expect(await getLookoutContext()).toEqual({mode:"legacy"});
   expect(getLabIdentity).not.toHaveBeenCalled();
  });
- it("keeps existing valid Basic auth in the original application",async()=>{
-  const value="Basic "+Buffer.from("lookout:test-password").toString("base64");
-  vi.mocked(headers).mockResolvedValue({get:()=>value} as never);
-  expect(await getLookoutContext()).toEqual({mode:"legacy"});
-  expect(getLabIdentity).not.toHaveBeenCalled();
+ it("does not allow legacy admin Basic auth to bypass a multi-user session",async()=>{
+  vi.mocked(getLabIdentity).mockResolvedValue(null);
+  await expect(getLookoutContext()).rejects.toThrow("REDIRECT:/auth/sign-in");
  });
  it("denies unauthenticated requests to the original dashboard",async()=>{
   vi.mocked(getLabIdentity).mockResolvedValue(null);
