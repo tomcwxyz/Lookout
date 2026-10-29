@@ -4,7 +4,9 @@ import {listVerifiedIdentityOrganisations} from "@lookout/db";
 import {getLabIdentity} from "../../lib/auth/lab-server";
 import {createLabOrganisation,signOutLab} from "./actions";
 export const dynamic="force-dynamic";
-export default async function LabHome({searchParams}:{searchParams:Promise<{error?:string}>}){\n const {error}=await searchParams;\n const errors:Record<string,string>={invalid:"Check the organisation name and workspace address.",slug:"That workspace address is already in use. Please choose another.",linked:"This email is already linked to a different account. Please sign in with that account."};
+export default async function LabHome({searchParams}:{searchParams:Promise<{error?:string}>}){
+ const {error}=await searchParams;
+ const errors:Record<string,string>={invalid:"Check the organisation name and workspace address.",slug:"That workspace address is already in use. Please choose another.",linked:"This email is already linked to a different account. Please sign in with that account."};
  const identity=await getLabIdentity();
  if(!identity)redirect("/auth/sign-in");
  const workspaces=await listVerifiedIdentityOrganisations(identity.issuer,identity.subject);
@@ -14,16 +16,19 @@ export default async function LabHome({searchParams}:{searchParams:Promise<{erro
   <h1>Welcome{identity.name?", "+identity.name:""}</h1>
   <p>Choose an organisation to see only its projects and shared agent activity.</p></div>
   <form action={signOutLab}><button type="submit">Sign out</button></form></div>
-  {error && errors[error] && <section className="notice" role="alert"><strong>Workspace could not be created</strong><p>{errors[error]}</p></section>}\n  <section className="panel" style={{padding:24}}><h2>Your organisations</h2>
+  {error && errors[error] && <section className="notice" role="alert"><strong>Workspace could not be created</strong><p>{errors[error]}</p></section>}
+  <section className="panel" style={{padding:24}}><h2>Your organisations</h2>
    {workspaces.length? <ul>{workspaces.map(o=><li key={o.id} style={{padding:10}}>
     <Link href={"/workspace/"+o.id+"/activate"}><strong>{o.name}</strong></Link> · {o.role}
    </li>)}</ul>:<p>No organisations yet. Create your first private workspace below.</p>}
   </section>
   {workspaces.length===0&&<section className="panel" style={{padding:24}}>
-   <h2>Create your workspace</h2>\n   <p>If you used Lookout before accounts were introduced, you can restore your original portfolio after creating your workspace.</p>
+   <h2>Create your workspace</h2>
+   <p>If you used Lookout before accounts were introduced, you can restore your original portfolio after creating your workspace.</p>
    <form action={createLabOrganisation} style={{display:"grid",gap:12,maxWidth:460}}>
     <label>Organisation name <input name="name" required minLength={2} maxLength={100} placeholder="My team" /></label>
-    <label>Workspace address <input name="slug" required maxLength={80} placeholder="good-ship" autoCapitalize="off" autoCorrect="off" /></label>\n    <small>Use a short name. Spaces and capitals are converted automatically.</small>
+    <label>Workspace address <input name="slug" required maxLength={80} placeholder="good-ship" autoCapitalize="off" autoCorrect="off" /></label>
+    <small>Use a short name. Spaces and capitals are converted automatically.</small>
     <button type="submit">Create private workspace</button>
    </form>
   </section>}
