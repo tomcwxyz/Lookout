@@ -68,7 +68,8 @@ export class GitHubAdapter implements SourceAdapter<ProjectSnapshot> {
         Accept: "application/vnd.github+json",
         "X-GitHub-Api-Version": "2022-11-28",
         "User-Agent": "lookout-agent/0.1"
-      }
+      },
+      signal: AbortSignal.timeout(15000)
     });
     if (!response.ok) {
       const detail = (await response.text()).slice(0, 300);
@@ -92,8 +93,8 @@ export class GitHubAdapter implements SourceAdapter<ProjectSnapshot> {
     return repos;
   }
 
-  async discoverInventory() {
-    const repos = await this.listRepos();
+  async discoverInventory(knownRepos?: Repo[]) {
+    const repos = knownRepos ?? await this.listRepos();
     return repos.map(repo => ({
       providerId: String(repo.id), slug: repo.full_name, name: repo.name,
       url: repo.html_url, description: repo.description,
