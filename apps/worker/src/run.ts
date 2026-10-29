@@ -33,7 +33,8 @@ async function syncGithub(): Promise<{ count: number; inventoried: number; failu
   try {
     // Lightweight listing exposes every accessible repository (including private
     // repos permitted by the token), before bounded, expensive detail inspections.
-    const [inventory, repositories] = await Promise.all([adapter.discoverInventory(), adapter.listRepos()]);
+    const repositories = await adapter.listRepos();
+    const inventory = await adapter.discoverInventory(repositories);
     await saveRepositoryInventory(inventory);
     const size = Math.min(30, Math.max(1, Number(process.env.LOOKOUT_GITHUB_BATCH_SIZE ?? 15)));
     const storedOffset = await getGithubScanOffset();
