@@ -51,3 +51,4 @@ export { getOrganisationConnectionOverview } from "./organisation-connection-ove
 
 export { issueOrganisationMcpReadToken, authoriseOrganisationMcpReadToken, revokeOrganisationMcpConnection, listOrganisationMcpFindings } from './organisation-mcp-auth';
 export type { OrganisationMcpSession } from './organisation-mcp-auth';
+\nexport { claimLegacyPortfolio, getLegacyPortfolioClaim } from "./legacy-portfolio-claim";\n
