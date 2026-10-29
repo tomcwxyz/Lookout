@@ -53,7 +53,7 @@ describe("lab organisation onboarding without email verification", () => {
       authenticated: true,
     });
     vi.mocked(onboardVerifiedIdentity).mockResolvedValue({ userId: 2, organisationId: 5, role: "owner" });
-    await expect(createLabOrganisation(newForm())).rejects.toThrow("REDIRECT:/lab/5");
+    await expect(createLabOrganisation(newForm())).rejects.toThrow("REDIRECT:/workspace/5/activate");
     expect(onboardVerifiedIdentity).toHaveBeenCalledWith({
       issuer: "https://auth.example.test",
       subject: "neon-user-1",
@@ -62,4 +62,33 @@ describe("lab organisation onboarding without email verification", () => {
       organisationSlug: "test-organisation",
     });
   });
+  it("normalises names and workspace addresses without trusting a posted identity", async () => {
+    vi.mocked(getLabIdentity).mockResolvedValue({
+      issuer: "https://auth.example.test", subject: "neon-user-1",
+      email: "real@example.com", emailVerified: false,
+      name: "User", authenticated: true,
+    });
+    vi.mocked(onboardVerifiedIdentity).mockResolvedValue({ userId: 2, organisationId: 5, role: "owner" });
+    const form = newForm();
+    form.set("name", "  Good Ship  ");
+    form.set("slug", "  Good Ship  ");
+    await expect(createLabOrganisation(form)).rejects.toThrow("REDIRECT:/workspace/5/activate");
+    expect(onboardVerifiedIdentity).toHaveBeenCalledWith(expect.objectContaining({
+      organisationName: "Good Ship", organisationSlug: "good-ship",
+      issuer: "https://auth.example.test", subject: "neon-user-1",
+      verifiedEmail: "real@example.com"
+    }));
+  });
+  it("rejects a blank or too-short organisation without calling onboarding", async () => {
+    vi.mocked(getLabIdentity).mockResolvedValue({
+      issuer: "https://auth.example.test", subject: "neon-user-1",
+      email: "real@example.com", emailVerified: false,
+      name: "User", authenticated: true,
+    });
+    const form = newForm();
+    form.set("name", " ");
+    await expect(createLabOrganisation(form)).rejects.toThrow("REDIRECT:/lab?error=invalid");
+    expect(onboardVerifiedIdentity).not.toHaveBeenCalled();
+  });
+
 });
