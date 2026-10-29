@@ -1,4 +1,4 @@
-import { and, eq, desc, inArray } from "drizzle-orm";
+import { and, eq, desc, inArray, sql } from "drizzle-orm";
 import { getDatabase } from "./client";
 import { projects } from "./schema";
 import { infrastructureResources } from "./infrastructure-schema";
@@ -19,6 +19,10 @@ export async function saveRepositoryInventory(repos: DiscoveredRepository[]) {
     const knownLinks = await tx.select({ providerId: portfolioRepositoryLinks.repositoryProviderId })
       .from(portfolioRepositoryLinks);
     const linked = new Set(knownLinks.map(x => x.providerId));
+    // New discoveries on the existing owner-scoped GitHub token belong to the
+    // organisation that explicitly claimed the historical portfolio.
+    const legacyOwners = await tx.execute(sql`SELECT organisation_id FROM lookout_legacy_portfolio_claim WHERE id=1`);
+    const legacyOwnerId = legacyOwners.length ? Number(legacyOwners[0]!.organisation_id) : null;
     for (const repo of repos) {
       await tx.insert(repositoryInventory).values({
         ...repo, lastActivityAt: repo.lastActivityAt ? new Date(repo.lastActivityAt) : null,

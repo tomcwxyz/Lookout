@@ -15,7 +15,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
   // Lab sign-in and account screens use provider-managed sessions only when the isolated lab is explicitly enabled.
-  if (process.env.LOOKOUT_MULTIUSER_LAB === "enabled" && (/^\/auth\//.test(request.nextUrl.pathname) || /^\/api\/auth\//.test(request.nextUrl.pathname) || /^\/lab(?:\/|$)/.test(request.nextUrl.pathname))) return NextResponse.next();
+  if (process.env.LOOKOUT_MULTIUSER_LAB === "enabled" && (/^\/auth\//.test(request.nextUrl.pathname) || /^\/api\/auth\//.test(request.nextUrl.pathname) || /^\/lab(?:\/|$)/.test(request.nextUrl.pathname) || /^\/restore(?:\/|$)/.test(request.nextUrl.pathname))) return NextResponse.next();
   // The ORIGINAL Lookout screens now enforce Neon Auth + a verified organisation
   // at the server-rendered page boundary. Only explicitly migrated account pages
   // bypass the legacy Basic-auth challenge while the opt-in test is enabled.

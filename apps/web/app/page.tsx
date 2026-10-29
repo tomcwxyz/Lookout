@@ -89,6 +89,12 @@ export default async function Home() {
 
         {(!databaseConfigured() || error) && <section className="notice"><strong>Connect your workspace</strong><p>{error ?? "Add DATABASE_URL and GITHUB_TOKEN to your .env file, apply the migration, then run the synchronisation worker. No sample data is shown as if it were real."}</p><code>npm run db:migrate &amp;&amp; npm run sync</code></section>}
 
+        {account.mode === "account" && (logical?.projects.length ?? 0) === 0 && <section className="notice" style={{marginTop:20}}>
+          <strong>Used Lookout before accounts?</strong>
+          <p>Your previous projects are preserved, but are not automatically visible to a new organisation. If you previously used the admin password, you can securely attach your original portfolio.</p>
+          <Link href="/restore" className="back-link">Restore my previous portfolio →</Link>
+        </section>}
+
         {account.mode === "legacy" ? <ScanControls /> : <section className="panel lookout-source-status" aria-label="Observed sources" style={{marginTop:22,padding:22}}>
   <div className="panel-heading" style={{padding:"0 0 16px",marginBottom:16}}><div><span className="eyebrow">OBSERVED EVIDENCE</span><h2>Connected source observations</h2></div>
   <span className="count-pill">Existing source history · read-only</span></div>
@@ -108,7 +114,8 @@ export default async function Home() {
  projects={(logical?.projects??[]).map(p=>({id:p.id,name:p.name,description:p.description??"",status:p.status,repositories:p.repositories.length}))}
  reports={workspaceReports.map(e=>({id:e.id,portfolioId:e.portfolioId,projectName:e.projectName,agent:e.agent,kind:e.kind,title:e.title,summary:e.summary,nextStep:e.nextStep,recordedAt:e.recordedAt,blockerCount:e.blockerCount,remainingCount:e.remainingCount}))}
  resources={(infrastructure?.resources??[]).map(r=>({id:r.id,name:r.name,provider:r.provider,kind:r.kind,url:r.url,observedAt:new Date(r.observedAt).toISOString()}))}
- /> : <>\n<section className="dashboard-intelligence" aria-label="Portfolio intelligence">
+ /> : <>
+<section className="dashboard-intelligence" aria-label="Portfolio intelligence">
           <div className="intelligence-heading"><div><span className="eyebrow">TODAY / YOUR WORKSPACE</span><h2>Where things stand</h2><p>Start with the decisions that need you. Agent reports are labelled as claims, not verified changes.</p></div><Link href="/portfolio">Explore all projects →</Link></div>
           <div className="intelligence-grid">
             <article className="panel intelligence-panel"><div className="panel-heading"><div><span className="eyebrow">ACTIONABLE WORK</span><h2>Needs attention</h2></div><span className="count-pill">{workQueue.length} projects</span></div>
