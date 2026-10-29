@@ -89,7 +89,7 @@ export default async function Home() {
 
         {(!databaseConfigured() || error) && <section className="notice"><strong>Connect your workspace</strong><p>{error ?? "Add DATABASE_URL and GITHUB_TOKEN to your .env file, apply the migration, then run the synchronisation worker. No sample data is shown as if it were real."}</p><code>npm run db:migrate &amp;&amp; npm run sync</code></section>}
 
-        {account.mode === "legacy" ? <ScanControls /> : <section className="panel lookout-source-status" aria-label="Observed sources" style={{marginTop:22,padding:22}}>
+        {account.mode === "account" && (logical?.projects.length ?? 0) === 0 && <section className="notice" style={{marginTop:20}}>\n          <strong>Used Lookout before accounts?</strong>\n          <p>Your previous projects are preserved, but are not automatically visible to a new organisation. If you previously used the admin password, you can securely attach your original portfolio.</p>\n          <Link href="/restore" className="back-link">Restore my previous portfolio →</Link>\n        </section>}\n\n        {account.mode === "legacy" ? <ScanControls /> : <section className="panel lookout-source-status" aria-label="Observed sources" style={{marginTop:22,padding:22}}>
   <div className="panel-heading" style={{padding:"0 0 16px",marginBottom:16}}><div><span className="eyebrow">OBSERVED EVIDENCE</span><h2>Connected source observations</h2></div>
   <span className="count-pill">Existing source history · read-only</span></div>
   <p className="work-caution">These are recorded observations, not live provider connections for this account. Scanning new data remains disabled until your organisation has its own provider credentials.</p>
