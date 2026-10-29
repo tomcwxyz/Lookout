@@ -9,9 +9,12 @@ export async function createLabOrganisation(form:FormData){
  // Authentication is still established server-side via Neon Auth session cookies.
  if(!identity)throw new Error("Sign in before creating a workspace");
  const name=form.get("name"),slug=form.get("slug");
- if(typeof name!=="string"||typeof slug!=="string")throw new Error("Invalid organisation");
+ if(typeof name!=="string"||typeof slug!=="string")redirect("/lab?error=invalid");
+ const organisationName=name.trim();
+ const organisationSlug=slug.trim().toLowerCase().replace(/[^a-z0-9-]+/g,"-").replace(/^-+|-+$/g,"");
+ if(organisationName.length<2||organisationName.length>100||organisationSlug.length<3||organisationSlug.length>50)redirect("/lab?error=invalid");
  const organisation=await onboardVerifiedIdentity({issuer:identity.issuer,subject:identity.subject,
-  verifiedEmail:identity.email,organisationName:name,organisationSlug:slug});
+  verifiedEmail:identity.email,organisationName,organisationSlug});
  redirect("/lab/"+organisation.organisationId);
 }
 export async function signOutLab(){
