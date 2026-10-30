@@ -1,6 +1,6 @@
 "use server";
 import { redirect } from "next/navigation";
-import { claimLegacyPortfolio } from "@lookout/db";
+import { claimLegacyPortfolio, consumeLegacyRecoveryAttempt } from "@lookout/db";
 import { getLookoutContext } from "../../lib/auth/lookout-context";
 import { getLabIdentity } from "../../lib/auth/lab-server";
 import { validLegacyRecoveryPassword } from "../../lib/auth/legacy-password";
@@ -13,6 +13,9 @@ export async function restoreExistingPortfolio(form: FormData) {
   if (context.mode !== "account" || context.role !== "owner") redirect("/");
   const identity = await getLabIdentity();
   if (!identity?.authenticated) redirect("/auth/sign-in");
+
+  // Apply a global, database-backed throttle before comparing the old password.
+  if (!await consumeLegacyRecoveryAttempt()) redirect("/restore?error=limit");
 
   if (!validLegacyRecoveryPassword(form.get("previousAdminPassword"), process.env.LOOKOUT_DASHBOARD_TOKEN))
     redirect("/restore?error=credential");
