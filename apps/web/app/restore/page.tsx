@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getLegacyPortfolioClaim } from "@lookout/db";
 import { getLookoutContext } from "../../lib/auth/lookout-context";
 import { restoreExistingPortfolio } from "./actions";
+import { legacyRecoveryConfigured } from "../../lib/auth/legacy-password";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +23,7 @@ export default async function RestorePortfolioPage({
   const claimedBy = await getLegacyPortfolioClaim();
   const isOwner = context.role === "owner";
   const isRestoredHere = claimedBy === context.organisationId;
-  const canRestore = isOwner && claimedBy === null && (process.env.LOOKOUT_DASHBOARD_TOKEN?.length ?? 0) >= 16;
+  const canRestore = isOwner && claimedBy === null && legacyRecoveryConfigured(process.env.LOOKOUT_DASHBOARD_TOKEN);
 
   return <main className="detail-layout" style={{maxWidth:760,margin:"3rem auto",padding:"0 20px"}}>
     <Link href="/" className="back-link">← Back to Lookout</Link>
