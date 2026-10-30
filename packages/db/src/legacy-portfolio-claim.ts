@@ -65,3 +65,23 @@ export async function getLegacyPortfolioClaim() {
   `);
   return rows.length ? Number(rows[0]!.organisation_id) : null;
 }
+
+/** Consume a globally bounded attempt before checking the old dashboard password.
+ * Self-service account creation must not multiply an attacker's guessing budget.
+ * One atomic UPSERT prevents simultaneous submissions bypassing the limit.
+ */
+export async function consumeLegacyRecoveryAttempt(): Promise<boolean> {
+  const rows = await getDatabase().execute(sql`
+    INSERT INTO lookout_legacy_recovery_throttle(id, window_started_at, attempt_count)
+    VALUES (1, now(), 1)
+    ON CONFLICT(id) DO UPDATE SET
+      window_started_at = CASE
+        WHEN lookout_legacy_recovery_throttle.window_started_at <= now() - interval '30 minutes'
+        THEN now() ELSE lookout_legacy_recovery_throttle.window_started_at END,
+      attempt_count = CASE
+        WHEN lookout_legacy_recovery_throttle.window_started_at <= now() - interval '30 minutes'
+        THEN 1 ELSE LEAST(lookout_legacy_recovery_throttle.attempt_count + 1, 1000000) END
+    RETURNING attempt_count
+  `);
+  return Number(rows[0]?.attempt_count ?? 1000000) <= 5;
+}
