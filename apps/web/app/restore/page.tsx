@@ -11,7 +11,8 @@ const messages: Record<string,string> = {
   credential: "That is not the previous Lookout admin password. Your portfolio has not been changed.",
   claimed: "This original portfolio has already been restored to a workspace.",
   review: "Some portfolio projects are already assigned. Recovery needs a manual review to protect other workspaces.",
-  permissions: "Only an organisation owner can restore the previous portfolio."
+  permissions: "Only an organisation owner can restore the previous portfolio.",
+  limit: "Too many recovery attempts. Please try again after 30 minutes."
 };
 
 export default async function RestorePortfolioPage({
