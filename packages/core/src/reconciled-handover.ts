@@ -6,12 +6,13 @@ export type SessionHandover = {
   eventId: string; agent: string; title: string; aim: string; summary: string;
   workstream: string; next: string; done: string[]; notDone: string[];
   decisions: string[]; blockers: string[]; addresses: string[];
-  basedOnRevision: number | null; branch?: string; commitSha?: string; prUrl?: string;
+  basedOnRevision: number | null; basedOnLegacyCursor: string | null;
+  branch?: string; commitSha?: string; prUrl?: string;
 };
 export type HandoverReconciliation = {
   status: "incorporated" | "needs_review";
   previousRevision: number; basedOnRevision: number | null;
-  staleContext: boolean; reason: string;
+  staleContext: boolean; legacyChanged: boolean; reason: string;
   proposedClosures: string[]; evidence: "pr_observed" | "pr_not_observed" | "not_checked";
   previousWorkstreamEventId: string | null; newlyReportedBlockers: string[];
   noLongerReportedBlockers: string[];
@@ -48,6 +49,8 @@ export function parseSessionHandover(raw: unknown): SessionHandover {
   const basedOnRevision = v.basedOnRevision == null ? null : v.basedOnRevision;
   if (basedOnRevision !== null && (!Number.isSafeInteger(basedOnRevision) || (basedOnRevision as number) < 0))
     throw new Error("Invalid basedOnRevision");
+  const basedOnLegacyCursor = v.basedOnLegacyCursor == null ? null : required(v.basedOnLegacyCursor, "basedOnLegacyCursor", 70);
+  if (basedOnLegacyCursor !== null && !/^\\d+:\\d+$/.test(basedOnLegacyCursor)) throw new Error("Invalid basedOnLegacyCursor");
   const addresses = strings(v.addresses ?? [], "addresses", 10);
   if (addresses.some(id => !eventIdPattern.test(id))) throw new Error("Invalid addressed event");
   return {
@@ -59,7 +62,7 @@ export function parseSessionHandover(raw: unknown): SessionHandover {
     done: strings(v.done, "done", 12), notDone: strings(v.notDone, "notDone", 12),
     decisions: strings(v.decisions, "decisions", 10),
     blockers: strings(v.blockers, "blockers", 10), addresses,
-    basedOnRevision: basedOnRevision as number | null,
+    basedOnRevision: basedOnRevision as number | null, basedOnLegacyCursor,
     ...(branch ? {branch} : {}), ...(commitSha ? {commitSha} : {}),
     ...(prUrl ? {prUrl} : {})
   };
@@ -68,20 +71,22 @@ export function parseSessionHandover(raw: unknown): SessionHandover {
 export function reconcileSession(
   report: SessionHandover, revision: number,
   evidence: HandoverReconciliation["evidence"] = "not_checked",
-  previous?: {eventId:string;blockers:string[]}
+  previous?: {eventId:string;blockers:string[]},
+  currentLegacyCursor?: string
 ): HandoverReconciliation {
   const noLongerReportedBlockers = (previous?.blockers ?? []).filter(b => !report.blockers.includes(b));
   const newlyReportedBlockers = report.blockers.filter(b => !(previous?.blockers ?? []).includes(b));
-  const staleContext = report.basedOnRevision !== revision;
+  const legacyChanged = currentLegacyCursor !== undefined && report.basedOnLegacyCursor !== currentLegacyCursor;
+  const staleContext = report.basedOnRevision !== revision || legacyChanged;
   const needsReview = staleContext || noLongerReportedBlockers.length > 0;
   return {
     status: needsReview ? "needs_review" : "incorporated",
     previousRevision: revision, basedOnRevision: report.basedOnRevision,
-    staleContext,
+    staleContext, legacyChanged,
     reason: report.basedOnRevision === null
       ? "No previous Lookout revision was supplied; the report is retained for review."
       : staleContext
-        ? "Lookout changed since this agent read it; review concurrent work before incorporation."
+        ? "Lookout or an older MCP client added reports since this agent read the context; review before incorporation."
         : noLongerReportedBlockers.length
           ? "Earlier blockers were omitted. Their resolution needs evidence or human review before replacing the current position."
           : "Incorporated as an attributed, unverified report; no completion was automatically confirmed.",
