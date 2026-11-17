@@ -172,3 +172,19 @@ export async function submitReconciledHandover(
       reconciliation};
   });
 }
+
+/** Scoped caller must authorise the project before requesting a receipt. */
+export async function getHandoverReconciliation(portfolioId: number, eventId: string) {
+  safeProject(portfolioId);
+  if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{5,119}$/.test(eventId))
+    throw new Error("Invalid event ID");
+  const rows = await getDatabase().execute(sql`
+    SELECT event_id,revision,source,actor,workstream,reconciliation,recorded_at
+    FROM lookout_handover_sessions
+    WHERE portfolio_project_id=${portfolioId} AND event_id=${eventId} LIMIT 1`);
+  if (!rows.length) return null;
+  const row = rows[0];
+  return {eventId:String(row.event_id),revision:toNumber(row.revision),
+    source:String(row.source),agent:String(row.actor),workstream:String(row.workstream),
+    reconciliation:row.reconciliation,recordedAt:asDate(row.recorded_at)};
+}
