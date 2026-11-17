@@ -1,6 +1,6 @@
 import {McpServer} from "@modelcontextprotocol/server";
 import * as z from "zod/v4";
-import {listTenantPortfolioProjects,authorisedPortfolioProject,listOrganisationMcpFindings,listWorkspaceReports} from "@lookout/db";
+import {listTenantPortfolioProjects,authorisedPortfolioProject,listOrganisationMcpFindings,listWorkspaceReports,getSharedHandoverContext} from "@lookout/db";
 import type {HostedMcpIdentity} from "./hosted-mcp-auth";
 
 const readOnly={readOnlyHint:true,destructiveHint:false,openWorldHint:false} as const;
@@ -32,6 +32,15 @@ export function createOrganisationMcpServer(identity:OrganisationIdentity){
   inputSchema:z.object({}),annotations:readOnly
  },async()=>content({reports:await listWorkspaceReports(identity.organisationId,50),
    trustNote:"Agent claims are unverified and cannot change the project lifecycle."}));
+ server.registerTool("lookout_get_context",{
+  description:"Read consolidated handovers, revisions, current workstreams and human decisions for an organisation-authorised logical project. Read-only.",
+  inputSchema:z.object({portfolioId:z.number().int().positive()}),annotations:readOnly
+ },async({portfolioId})=>{
+  const authorised=await authorisedPortfolioProject(identity.organisationId,portfolioId);
+  if(!authorised)return {isError:true,content:[{type:"text" as const,text:"Project not found in this organisation."}]};
+  const context=await getSharedHandoverContext(portfolioId);
+  return context?content(context):{isError:true,content:[{type:"text" as const,text:"Project unavailable."}]};
+ });
  server.registerTool("lookout_get_portfolio_project",{
   description:"Read one organisation-authorised project. A guessed project ID outside the organisation returns not found.",
   inputSchema:z.object({portfolioId:z.number().int().positive()}),annotations:readOnly
