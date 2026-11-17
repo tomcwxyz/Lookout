@@ -5,7 +5,7 @@ import { ScanControls } from "./components/scan-controls";
 import { WorkspaceExplorer } from "./components/workspace-explorer";
 import { deriveWorkHandover } from "@lookout/core";
 import { workStageLabels, confirmedStageLabels, effectiveWorkStatus } from "./components/work-handover";
-import { databaseConfigured, getPortfolio, getInfrastructurePortfolio, getLogicalPortfolio, listPortfolioContributions, listChatgptContributions, listWorkspaceReports, getWorkspaceSourceSummary } from "@lookout/db";
+import { databaseConfigured, getPortfolio, getInfrastructurePortfolio, getLogicalPortfolio, listPortfolioContributions, listChatgptContributions, listWorkspaceReports, getWorkspaceSourceSummary, listWorkspacePositions } from "@lookout/db";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +31,7 @@ export default async function Home() {
   const sourceSummary = organisationId !== null ? await getWorkspaceSourceSummary(organisationId).catch(() => null) : null;
   const infraAttention = infrastructure?.findings.length ?? 0;
   const workspaceReports = organisationId!==null ? await listWorkspaceReports(organisationId,50).catch(()=>[]) : [];
+  const workspacePositions = organisationId!==null ? await listWorkspacePositions(organisationId,12).catch(()=>[]) : [];
   const legacyAgentRecent = organisationId !== null ? [] : (await Promise.all((logical?.projects ?? []).map(async p => {
  const [agents,chatgpt]=await Promise.all([listPortfolioContributions(p.id,5).catch(()=>[]),listChatgptContributions(p.id).catch(()=>[])]);
  return [...agents.map(a=>({id:"agent-"+a.id,agent:a.agent,title:a.title,summary:a.payload.summary,recordedAt:new Date(a.recordedAt)})),...chatgpt.map(c=>{const payload=c.payload as {title?:string;summary?:string};return {id:"chatgpt-"+c.id,agent:"ChatGPT",title:payload.title??"ChatGPT contribution",summary:payload.summary??"",recordedAt:new Date(String(c.recorded_at))};})];
@@ -113,6 +114,7 @@ export default async function Home() {
   project:item.name,kind:item.kind,severity:item.severity,title:item.title,explanation:item.explanation,url:item.evidenceUrl,at:new Date(item.observedAt).toISOString()}))}
  projects={(logical?.projects??[]).map(p=>({id:p.id,name:p.name,description:p.description??"",status:p.status,repositories:p.repositories.length}))}
  reports={workspaceReports.map(e=>({id:e.id,portfolioId:e.portfolioId,projectName:e.projectName,agent:e.agent,kind:e.kind,title:e.title,summary:e.summary,nextStep:e.nextStep,recordedAt:e.recordedAt,blockerCount:e.blockerCount,remainingCount:e.remainingCount}))}
+ positions={workspacePositions}
  resources={(infrastructure?.resources??[]).map(r=>({id:r.id,name:r.name,provider:r.provider,kind:r.kind,url:r.url,observedAt:new Date(r.observedAt).toISOString()}))}
  /> : <>
 <section className="dashboard-intelligence" aria-label="Portfolio intelligence">
