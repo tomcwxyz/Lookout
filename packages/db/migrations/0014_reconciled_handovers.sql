@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS lookout_handover_sessions (
   revision integer NOT NULL,
   based_on_revision integer,
   payload jsonb NOT NULL,
+  payload_hash text NOT NULL,
   reconciliation jsonb NOT NULL,
   recorded_at timestamptz NOT NULL DEFAULT now(),
   UNIQUE (portfolio_project_id,event_id),
