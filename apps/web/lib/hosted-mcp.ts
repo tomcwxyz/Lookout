@@ -150,8 +150,10 @@ export function createHostedMcpServer(identity: LegacyHostedMcpIdentity) {
     const [data, logical] = await Promise.all([
       getAgentHandover(id), getPortfolioContributionHandover(id)
     ]);
+    const portfolioId=await getPortfolioIdForObservedProject(id);
+    const sharedContext=portfolioId?await getSharedHandoverContext(portfolioId,id):null;
     return data ? result({
-      ...data, logicalProject: logical?.project ?? null,
+      ...data, sharedContext, logicalProject: logical?.project ?? null,
       latestContributions: logical?.contributions ?? [],
       chatgptContributions: logical?.project ? await listChatgptContributions((await getPortfolioIdForObservedProject(id))!).catch(() => []) : [],
       trustNote: "Agent contributions and checkpoints are self-reports; human decisions remain authoritative."
