@@ -53,3 +53,5 @@ export { issueOrganisationMcpReadToken, authoriseOrganisationMcpReadToken, revok
 export type { OrganisationMcpSession } from './organisation-mcp-auth';
 
 export { claimLegacyPortfolio, getLegacyPortfolioClaim, consumeLegacyRecoveryAttempt } from "./legacy-portfolio-claim";
+
+export { getSharedHandoverContext, submitReconciledHandover, HandoverEventConflictError } from "./reconciled-handover-repository";
