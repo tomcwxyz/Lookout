@@ -13,6 +13,8 @@ export type HandoverReconciliation = {
   previousRevision: number; basedOnRevision: number | null;
   staleContext: boolean; reason: string;
   proposedClosures: string[]; evidence: "pr_observed" | "pr_not_observed" | "not_checked";
+  previousWorkstreamEventId: string | null; newlyReportedBlockers: string[];
+  noLongerReportedBlockers: string[];
   trust: "agent_reported";
 };
 const eventIdPattern = /^[A-Za-z0-9][A-Za-z0-9._:-]{5,119}$/;
@@ -65,19 +67,27 @@ export function parseSessionHandover(raw: unknown): SessionHandover {
 /** Deterministic consistency gate; independent verification happens elsewhere. */
 export function reconcileSession(
   report: SessionHandover, revision: number,
-  evidence: HandoverReconciliation["evidence"] = "not_checked"
+  evidence: HandoverReconciliation["evidence"] = "not_checked",
+  previous?: {eventId:string;blockers:string[]}
 ): HandoverReconciliation {
+  const noLongerReportedBlockers = (previous?.blockers ?? []).filter(b => !report.blockers.includes(b));
+  const newlyReportedBlockers = report.blockers.filter(b => !(previous?.blockers ?? []).includes(b));
   const staleContext = report.basedOnRevision !== revision;
+  const needsReview = staleContext || noLongerReportedBlockers.length > 0;
   return {
-    status: staleContext ? "needs_review" : "incorporated",
+    status: needsReview ? "needs_review" : "incorporated",
     previousRevision: revision, basedOnRevision: report.basedOnRevision,
     staleContext,
     reason: report.basedOnRevision === null
       ? "No previous Lookout revision was supplied; the report is retained for review."
       : staleContext
         ? "Lookout changed since this agent read it; review concurrent work before incorporation."
-        : "Incorporated as an attributed, unverified report; no completion was automatically confirmed.",
+        : noLongerReportedBlockers.length
+          ? "Earlier blockers were omitted. Their resolution needs evidence or human review before replacing the current position."
+          : "Incorporated as an attributed, unverified report; no completion was automatically confirmed.",
     proposedClosures: [...report.addresses],
+    previousWorkstreamEventId: previous?.eventId ?? null,
+    newlyReportedBlockers, noLongerReportedBlockers,
     evidence, trust: "agent_reported"
   };
 }
