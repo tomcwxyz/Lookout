@@ -38,7 +38,7 @@ function createServer(){
         title:z.string().min(1).max(180),aim:z.string().min(1).max(1000),
         summary:z.string().min(1).max(2500),workstream:z.string().min(1).max(120).optional(),
         basedOnRevision:z.number().int().min(0).nullable().optional(),
-    basedOnLegacyCursor:z.string().regex(/^\\d+:\\d+$/).max(70).nullable().optional(),
+    basedOnLegacyCursor:z.string().regex(/^\d+:\d+$/).max(70).nullable().optional(),
         next:z.string().min(1).max(300),
         done:z.array(z.string().min(1).max(300)).max(12),
         notDone:z.array(z.string().min(1).max(300)).max(12),
