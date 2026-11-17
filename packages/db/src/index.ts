@@ -44,7 +44,7 @@ export { getTenantLookoutOverview, getTenantLookoutProject } from "./tenant-look
 
 export { createAccountProject, confirmAccountProjectStatus } from "./tenant-portfolio-actions";
 
-export { listWorkspaceReports, getWorkspaceSourceSummary } from './tenant-workspace-intelligence';
+export { listWorkspaceReports, getWorkspaceSourceSummary, listWorkspacePositions } from './tenant-workspace-intelligence';
 export type { WorkspaceReport } from './tenant-workspace-intelligence';
 
 export { getOrganisationConnectionOverview } from "./organisation-connection-overview";
