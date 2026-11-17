@@ -133,10 +133,10 @@ ChatGPT and coding agents read the same project state, while retaining
 separate, authenticated write permissions.
 
 * The context's `revision` identifies the latest **v2 handover submission**.
-  The earlier checkpoint and ChatGPT tables remain readable but do not advance
-  this revision. Repository scans are timestamped independently.
+  The earlier checkpoint and ChatGPT tables remain readable and are tracked by
+  `legacyCursor` (their latest stored IDs). Repository scans are timestamped independently.
 * The server serialises writes for each logical project, assigns a new revision
-  and stores the previous revision read by the author. Stale or absent revision
+  and stores the revision and legacy cursor read by the author. Stale or absent revision
   goes to `needs_review`, not current position.
 * Two v2 notes in different workstreams may both be valid, but if either used an
   outdated project revision it requires reconciliation; project history is never
