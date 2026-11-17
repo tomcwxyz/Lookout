@@ -24,6 +24,13 @@ describe("reconciled handovers", () => {
     expect(outcome.proposedClosures).toEqual(["earlier-session-01"]);
     expect(outcome.reason).toContain("unverified");
   });
+  it("does not quietly lose previously reported blockers", () => {
+    const p = parseSessionHandover(report);
+    const outcome = reconcileSession(p, 2, "not_checked", {eventId:"old-agent-note",blockers:["Unproven data repair"]});
+    expect(outcome.status).toBe("needs_review");
+    expect(outcome.noLongerReportedBlockers).toEqual(["Unproven data repair"]);
+    expect(outcome.previousWorkstreamEventId).toBe("old-agent-note");
+  });
   it("rejects invalid revisions and untrusted links", () => {
     expect(() => parseSessionHandover({...report, basedOnRevision: -1})).toThrow();
     expect(() => parseSessionHandover({...report, prUrl: "https://evil.example/pr/9"})).toThrow();
