@@ -50,7 +50,7 @@ export function parseSessionHandover(raw: unknown): SessionHandover {
   if (basedOnRevision !== null && (!Number.isSafeInteger(basedOnRevision) || (basedOnRevision as number) < 0))
     throw new Error("Invalid basedOnRevision");
   const basedOnLegacyCursor = v.basedOnLegacyCursor == null ? null : required(v.basedOnLegacyCursor, "basedOnLegacyCursor", 70);
-  if (basedOnLegacyCursor !== null && !/^\\d+:\\d+$/.test(basedOnLegacyCursor)) throw new Error("Invalid basedOnLegacyCursor");
+  if (basedOnLegacyCursor !== null && !/^\d+:\d+$/.test(basedOnLegacyCursor)) throw new Error("Invalid basedOnLegacyCursor");
   const addresses = strings(v.addresses ?? [], "addresses", 10);
   if (addresses.some(id => !eventIdPattern.test(id))) throw new Error("Invalid addressed event");
   return {
