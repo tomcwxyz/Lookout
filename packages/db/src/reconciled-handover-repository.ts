@@ -159,7 +159,32 @@ export async function submitReconciledHandover(
         ) LIMIT 1`) : [];
     const evidence = report.prUrl
       ? linkedPr.length ? "pr_observed" : "pr_not_observed" : "not_checked";
-    const reconciliation = reconcileSession(report,revision,evidence);
+    // Compare only the same named workstream. A missing blocker is not proof of resolution.
+    const earlierV2=await tx.execute(sql`
+      SELECT event_id,payload FROM lookout_handover_sessions
+      WHERE portfolio_project_id=${portfolioId} AND workstream=${report.workstream}
+        AND reconciliation->>'status'='incorporated'
+      ORDER BY revision DESC LIMIT 1`);
+    const earlierLegacy=earlierV2.length?[]:await tx.execute(sql`
+      SELECT event_id,payload FROM (
+        SELECT event_id,payload,recorded_at FROM agent_contributions
+          WHERE portfolio_project_id=${portfolioId}
+        UNION ALL
+        SELECT event_id,payload,recorded_at FROM chatgpt_contributions
+          WHERE portfolio_project_id=${portfolioId}
+      ) old
+      WHERE
+        (${report.prUrl ?? ""}<>'' AND payload->>'prUrl'=${report.prUrl ?? ""})
+        OR (${report.branch ?? ""}<>'' AND payload->>'branch'=${report.branch ?? ""})
+        OR (${report.workstream}='general' AND ${report.prUrl ?? ""}=''
+          AND ${report.branch ?? ""}='')
+      ORDER BY recorded_at DESC LIMIT 1`);
+    const prior=earlierV2[0]??earlierLegacy[0];
+    const before=prior?.payload as {blockers?:unknown}|undefined;
+    const oldBlockers=Array.isArray(before?.blockers)?
+      before.blockers.filter((v:unknown):v is string=>typeof v==="string"):[];
+    const reconciliation = reconcileSession(report,revision,evidence,
+      prior?{eventId:String(prior.event_id),blockers:oldBlockers}:undefined);
     const inserted = await tx.execute(sql`
       INSERT INTO lookout_handover_sessions
        (portfolio_project_id,event_id,source,actor,workstream,revision,based_on_revision,
