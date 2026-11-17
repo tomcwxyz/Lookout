@@ -124,3 +124,38 @@ Tokens are hashed at rest, issued for one project, revocable and revealed once. 
 - [ ] Observe real, source-linked checkpoint history in the dashboard.
 
 Future work: optional local lifecycle hooks, offline batching, source-linked CI/deployment verification, stable feature grouping and permission-controlled TOPO context exchange.
+
+## Revision-aware cross-agent loop (implementation proposal in PR #54)
+
+The preferred v2 path uses `lookout_get_context` → work →
+`lookout_submit_handover` → `lookout_get_reconciliation`.
+ChatGPT and coding agents read the same project state, while retaining
+separate, authenticated write permissions.
+
+* The context's `revision` identifies the latest **v2 handover submission**.
+  The earlier checkpoint and ChatGPT tables remain readable but do not advance
+  this revision. Repository scans are timestamped independently.
+* The server serialises writes for each logical project, assigns a new revision
+  and stores the previous revision read by the author. Stale or absent revision
+  goes to `needs_review`, not current position.
+* Two v2 notes in different workstreams may both be valid, but if either used an
+  outdated project revision it requires reconciliation; project history is never
+  destroyed. Submitting the same event ID and content is idempotent.
+* A PR can be independently observed as **open**. This does not confirm that
+  its code is deployed, tests pass, or a previous blocker is resolved. Missing
+  PRs may have been merged or missed by scanning; they are not automatically
+  classified as failures. Likewise, `addresses` only proposes closure.
+* Current positions are labelled **agent-reported**, never human-confirmed.
+  Explicit human decisions and the project status remain untouched.
+* The new REST routes use existing per-repository bearer-token authentication.
+  The hosted MCP owner may write only with `lookout:contribute` permission.
+  Existing v1 tools remain intact, and read responses can include the shared
+  context for clients not yet using the new tool names.
+
+### Required acceptance before deployment
+
+Apply `0014_reconciled_handovers.sql` using `npm run db:migrate` against
+Lookout's own database (never a monitored project's database). Validate an
+agent and ChatGPT handover against the same revision, a stale concurrent
+handover, idempotent retry, cross-project token denial, and project dashboard
+grant isolation. Verify actual repository CI and preview deployments separately.
