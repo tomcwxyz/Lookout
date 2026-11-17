@@ -32,10 +32,10 @@ Once 0.4 is published and the Lookout server has applied migration 0014:
 
 1. Call `lookout_get_context` **before meaningful work**. It includes earlier ChatGPT
    and coding-agent notes, verified observation timestamps, explicit human decisions,
-   current workstreams and a numeric `revision`.
+   current workstreams and a numeric `revision` and `legacyCursor`.
 2. Work and check your own evidence.
 3. Call `lookout_submit_handover` with `basedOnRevision` from that response,
-   a stable `eventId`, a plain-English account of the result and `next`.
+   `basedOnLegacyCursor` from the same context, a stable `eventId`, a plain-English account of the result and `next`.
    Optional `addresses` points at earlier handover event IDs. These are
    **proposed closures**, not automatic resolutions.
 4. Inspect the returned receipt or use `lookout_get_reconciliation`.
