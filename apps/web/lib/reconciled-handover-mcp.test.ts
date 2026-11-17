@@ -6,7 +6,7 @@ vi.mock("@lookout/db", () => ({
     {scope:"lookout:read lookout:contribute",clientId:"https://chatgpt.com/"}:null),
   getPortfolioIdForObservedProject:vi.fn(async (observed:number)=>observed===7?3:null),
   getSharedHandoverContext:vi.fn(async (portfolio:number,observed?:number)=>({
-    project:{portfolioId:portfolio},revision:2,current:[],earlierReports:[],
+    project:{portfolioId:portfolio},revision:2,legacyCursor:"3:12",current:[],earlierReports:[],
     observedProjectId:observed??null
   })),
   getHandoverReconciliation:vi.fn(async (_id:number,eventId:string)=>({eventId,revision:3,
@@ -46,7 +46,7 @@ async function call(method:string,params:unknown,credential=token){
 const report={
  eventId:"claude-session-012",agent:"Claude",title:"Repaired import",
  aim:"Repair preview import",summary:"Adjusted importer; production unchanged",
- basedOnRevision:2,workstream:"uk-import",next:"Verify full coverage",
+ basedOnRevision:2,basedOnLegacyCursor:"3:12",workstream:"uk-import",next:"Verify full coverage",
  done:["Parser updated"],notDone:["Mobile acceptance"],decisions:[],
  blockers:[],addresses:[]
 };
