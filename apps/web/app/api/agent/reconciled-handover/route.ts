@@ -35,7 +35,7 @@ export async function POST(request:NextRequest) {
   } catch { return NextResponse.json({error:"Invalid JSON"},{status:400,headers:noStore}); }
   try {
     const actor="coding-agent:"+access.identity.id;
-    const result=await submitReconciledHandover(access.portfolioId,"agent",actor,raw);
+    const result=await submitReconciledHandover(access.portfolioId,"agent",actor,raw,access.identity.projectId);
     return NextResponse.json(result,{status:result.duplicate?200:201,headers:noStore});
   } catch(error) {
     if(error instanceof HandoverEventConflictError) return NextResponse.json({error:error.message},{status:409,headers:noStore});
