@@ -54,4 +54,4 @@ export type { OrganisationMcpSession } from './organisation-mcp-auth';
 
 export { claimLegacyPortfolio, getLegacyPortfolioClaim, consumeLegacyRecoveryAttempt } from "./legacy-portfolio-claim";
 
-export { getSharedHandoverContext, submitReconciledHandover, HandoverEventConflictError } from "./reconciled-handover-repository";
+export { getSharedHandoverContext, submitReconciledHandover, getHandoverReconciliation, HandoverEventConflictError } from "./reconciled-handover-repository";
