@@ -66,7 +66,7 @@ describe("revision-aware hosted MCP",()=>{
  it("submits a revision-aware handover through the scoped project identity",async()=>{
    const response=await call("tools/call",{name:"lookout_submit_handover",arguments:report});
    expect(response.status).toBe(200);
-   expect(submitReconciledHandover).toHaveBeenCalledWith(3,"agent","coding-agent:5",report);
+   expect(submitReconciledHandover).toHaveBeenCalledWith(3,"agent","coding-agent:5",report,7);
    expect(response.body.result.content[0].text).toContain('"revision":3');
  });
  it("lets authorised ChatGPT contribute to its selected logical project",async()=>{
@@ -80,7 +80,7 @@ describe("revision-aware hosted MCP",()=>{
      name:"lookout_submit_handover",arguments:{...report,portfolioId:3}
    },token);
    expect(write.status).toBe(200);
-   expect(submitReconciledHandover).toHaveBeenCalledWith(3,"chatgpt","ChatGPT",report);
+   expect(submitReconciledHandover).toHaveBeenCalledWith(3,"chatgpt","ChatGPT",report,undefined);
  });
  it("keeps unauthorised owner bearer tokens read-only",async()=>{
    const owner="b".repeat(64);
