@@ -12,6 +12,8 @@ export async function submitChatgptContribution(portfolioId:number,clientId:stri
  return getDatabase().transaction(async tx=>{
   const projects=await tx.execute(sql`SELECT id FROM portfolio_projects WHERE id=${portfolioId} LIMIT 1`);
   if(!projects.length) throw new Error("Portfolio project not found");
+  // Keep existing ChatGPT MCP contributions visible to concurrent v2 handovers.
+  await tx.execute(sql`SELECT pg_advisory_xact_lock(72014,${portfolioId})`);
   const prev=await tx.execute(sql`SELECT id,payload_hash FROM chatgpt_contributions WHERE portfolio_project_id=${portfolioId} AND client_id=${clientId} AND event_id=${parsed.checkpoint.eventId} LIMIT 1`);
   if(prev.length){if(prev[0].payload_hash!==hash)throw new Error("Conflicting event ID");return {id:Number(prev[0].id),duplicate:true,trust:"agent_reported"};}
   const usage=await tx.execute(sql`SELECT count(*)::int AS total FROM chatgpt_contributions WHERE client_id=${clientId} AND recorded_at > now()-interval '1 day'`);

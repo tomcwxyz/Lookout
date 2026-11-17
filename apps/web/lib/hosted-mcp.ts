@@ -5,6 +5,7 @@ import {
   getAgentHandover, getInfrastructurePortfolio, getLinkedResources,
   getPortfolio, getProject, getLogicalPortfolio,
   getPortfolioIdForObservedProject, getPortfolioContributionHandover,
+  getSharedHandoverContext, submitReconciledHandover, getHandoverReconciliation, HandoverEventConflictError,
   listPortfolioContributions, submitAgentContribution, ContributionConflictError,
   ContributionScopeError, ContributionRateLimitError, submitChatgptContribution, listChatgptContributions
 } from "@lookout/db";
@@ -149,13 +150,79 @@ export function createHostedMcpServer(identity: LegacyHostedMcpIdentity) {
     const [data, logical] = await Promise.all([
       getAgentHandover(id), getPortfolioContributionHandover(id)
     ]);
+    const portfolioId=await getPortfolioIdForObservedProject(id);
+    const sharedContext=portfolioId?await getSharedHandoverContext(portfolioId,id):null;
     return data ? result({
-      ...data, logicalProject: logical?.project ?? null,
+      ...data, sharedContext, logicalProject: logical?.project ?? null,
       latestContributions: logical?.contributions ?? [],
       chatgptContributions: logical?.project ? await listChatgptContributions((await getPortfolioIdForObservedProject(id))!).catch(() => []) : [],
       trustNote: "Agent contributions and checkpoints are self-reports; human decisions remain authoritative."
     }) : failure("Project not found.");
   });
+
+  // Version 2: a single contract for owner ChatGPT and repository-scoped agents.
+  // Portfolio IDs and repository observation IDs are never interchangeable.
+  const lookupPortfolio = async (requested?:number) => {
+    if(identity.scope==="owner") return requested??null;
+    return getPortfolioIdForObservedProject(identity.projectId);
+  };
+  server.registerTool("lookout_get_context",{
+    description:"Read the consolidated current position, version, human decisions, earlier ChatGPT and coding-agent handovers and bounded repository evidence. Call before a meaningful working session. Owner: supply portfolioId. Project token: no ID required.",
+    inputSchema:z.object({portfolioId:z.number().int().positive().optional()}),annotations:readOnly
+  },async({portfolioId})=>{
+    if(identity.scope==="project" && portfolioId!==undefined) return failure("Project token cannot select a portfolio.");
+    const id=await lookupPortfolio(portfolioId);
+    if(!id)return failure("A logical portfolioId is required.");
+    const value=await getSharedHandoverContext(id,identity.scope==="project"?identity.projectId:undefined);
+    return value?result(value):failure("Project not found or not authorised.");
+  });
+  server.registerTool("lookout_get_reconciliation",{
+    description:"Read the server reconciliation receipt for an earlier handover; source report remains unverified. Owner: pass portfolioId; project token: omit portfolioId.",
+    inputSchema:z.object({eventId:z.string().min(6).max(120),portfolioId:z.number().int().positive().optional()}),
+    annotations:readOnly
+  },async({eventId,portfolioId})=>{
+    if(identity.scope==="project" && portfolioId!==undefined)return failure("Project token cannot select a portfolio.");
+    const id=await lookupPortfolio(portfolioId);
+    if(!id)return failure("A logical portfolioId is required.");
+    const value=await getHandoverReconciliation(id,eventId);
+    return value?result(value):failure("Handover not found.");
+  });
+  const v2Input=z.object({
+    eventId:z.string().min(6).max(120),agent:z.string().min(1).max(80),
+    title:z.string().min(1).max(180),aim:z.string().min(1).max(1000),
+    summary:z.string().min(1).max(2500),
+    workstream:z.string().min(1).max(120).optional(),
+    basedOnRevision:z.number().int().min(0).nullable().optional(),
+    basedOnLegacyCursor:z.string().regex(/^\d+:\d+$/).max(70).nullable().optional(),
+    next:z.string().min(1).max(300),
+    done:z.array(z.string().min(1).max(300)).max(12),
+    notDone:z.array(z.string().min(1).max(300)).max(12),
+    decisions:z.array(z.string().min(1).max(300)).max(10),
+    blockers:z.array(z.string().min(1).max(300)).max(10),
+    addresses:z.array(z.string().min(6).max(120)).max(10).optional(),
+    branch:z.string().max(200).optional(),commitSha:z.string().max(64).optional(),
+    prUrl:z.string().url().max(500).optional()
+  });
+  if(identity.scope==="project" || (identity.scope==="owner"&&identity.canContribute&&identity.clientId)){
+    server.registerTool("lookout_submit_handover",{
+      description:"Submit a revision-aware handover. Read lookout_get_context first and pass its revision as basedOnRevision. Lookout serialises competing writes, retains stale reports for review, and never automatically confirms completion or resolves human decisions.",
+      inputSchema:identity.scope==="owner"?v2Input.extend({portfolioId:z.number().int().positive()}):v2Input,
+      annotations:{readOnlyHint:false,destructiveHint:false,openWorldHint:false}
+    },async(args)=>{
+      try {
+        const candidate=args as typeof args & {portfolioId?:number};
+        const id=await lookupPortfolio(identity.scope==="owner"?candidate.portfolioId:undefined);
+        if(!id)return failure("A logical portfolioId is required.");
+        const {portfolioId:_ignore,...report}=candidate;
+        const actor=identity.scope==="project"?"coding-agent:"+identity.tokenId:"ChatGPT";
+        return result(await submitReconciledHandover(id,identity.scope==="project"?"agent":"chatgpt",actor,report,
+          identity.scope==="project"?identity.projectId:undefined));
+      }catch(error){
+        return failure(error instanceof HandoverEventConflictError?"Conflicting event ID":
+          error instanceof Error?error.message:"Handover rejected");
+      }
+    });
+  }
 
   server.registerTool("lookout_list_chatgpt_contributions",{
     description:"Read ChatGPT-authored, unverified project intelligence for a logical project; owner access only.",

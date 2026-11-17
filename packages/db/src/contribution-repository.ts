@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { and, count, desc, eq, gte, isNull } from "drizzle-orm";
+import { and, count, desc, eq, gte, isNull, sql } from "drizzle-orm";
 import { checkpointNextStep, parseContribution, type ContributionKind } from "@lookout/core";
 import { getDatabase } from "./client";
 import { agentAccessTokens, projects } from "./schema";
@@ -46,6 +46,8 @@ export async function submitAgentContribution(observedProjectId: number, tokenId
         eq(projects.providerId, portfolioRepositoryLinks.repositoryProviderId))
       .where(eq(projects.id, observedProjectId)).limit(1);
     if (!link) throw new ContributionScopeError();
+    // Serialise old-client writes with v2 revision checks for the same project.
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(72014,${link.portfolioId})`);
     const [existing] = await tx.select({ id: agentContributions.id, payloadHash: agentContributions.payloadHash })
       .from(agentContributions).where(and(eq(agentContributions.portfolioProjectId, link.portfolioId),
         eq(agentContributions.eventId, contribution.checkpoint.eventId))).limit(1);

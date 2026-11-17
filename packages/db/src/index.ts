@@ -44,7 +44,7 @@ export { getTenantLookoutOverview, getTenantLookoutProject } from "./tenant-look
 
 export { createAccountProject, confirmAccountProjectStatus } from "./tenant-portfolio-actions";
 
-export { listWorkspaceReports, getWorkspaceSourceSummary } from './tenant-workspace-intelligence';
+export { listWorkspaceReports, getWorkspaceSourceSummary, listWorkspacePositions } from './tenant-workspace-intelligence';
 export type { WorkspaceReport } from './tenant-workspace-intelligence';
 
 export { getOrganisationConnectionOverview } from "./organisation-connection-overview";
@@ -53,3 +53,5 @@ export { issueOrganisationMcpReadToken, authoriseOrganisationMcpReadToken, revok
 export type { OrganisationMcpSession } from './organisation-mcp-auth';
 
 export { claimLegacyPortfolio, getLegacyPortfolioClaim, consumeLegacyRecoveryAttempt } from "./legacy-portfolio-claim";
+
+export { getSharedHandoverContext, submitReconciledHandover, getHandoverReconciliation, HandoverEventConflictError } from "./reconciled-handover-repository";
