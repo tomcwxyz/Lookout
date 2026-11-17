@@ -75,3 +75,56 @@ export async function getWorkspaceSourceSummary(organisationId:number) {
   linkedResources:Number(row.linked_resources),githubSync:time(row.github_sync),
   neonSync:time(row.neon_sync),vercelSync:time(row.vercel_sync)};
 }
+
+/** One provisional current position per authorised project, not one card per handover.
+ * Existing v1 notes remain visible during the transition; stale v2 submissions
+ * never replace the current incorporated position.
+ */
+export async function listWorkspacePositions(organisationId:number,limit=12) {
+ if(!Number.isSafeInteger(organisationId)||organisationId<1)return [];
+ const max=Math.max(1,Math.min(30,Math.trunc(limit)));
+ const rows=await getDatabase().execute(sql`
+ SELECT p.id project_id,p.name project_name,
+   CASE WHEN v2.recorded_at >= COALESCE(old.recorded_at,'epoch'::timestamptz)
+     THEN v2.payload ELSE old.payload END payload,
+   CASE WHEN v2.recorded_at >= COALESCE(old.recorded_at,'epoch'::timestamptz)
+     THEN v2.recorded_at ELSE old.recorded_at END recorded_at,
+   CASE WHEN v2.recorded_at >= COALESCE(old.recorded_at,'epoch'::timestamptz)
+     THEN true ELSE false END reconciled,
+   COALESCE(v2.revision,0) revision,
+   (SELECT COUNT(*)::int FROM lookout_handover_sessions h
+     WHERE h.portfolio_project_id=p.id
+       AND h.reconciliation->>'status'='needs_review') review_count
+ FROM lookout_project_access a
+ JOIN portfolio_projects p ON p.id=a.portfolio_project_id
+ LEFT JOIN LATERAL (
+   SELECT payload,recorded_at,revision FROM lookout_handover_sessions h
+   WHERE h.portfolio_project_id=p.id
+     AND h.reconciliation->>'status'='incorporated'
+   ORDER BY revision DESC LIMIT 1
+ ) v2 ON true
+ LEFT JOIN LATERAL (
+   SELECT payload,recorded_at FROM (
+     SELECT c.payload,c.recorded_at FROM agent_contributions c WHERE c.portfolio_project_id=p.id
+     UNION ALL SELECT c.payload,c.recorded_at FROM chatgpt_contributions c
+       WHERE c.portfolio_project_id=p.id
+   ) earlier ORDER BY recorded_at DESC LIMIT 1
+ ) old ON true
+ WHERE a.organisation_id=${organisationId}
+   AND (v2.recorded_at IS NOT NULL OR old.recorded_at IS NOT NULL)
+ ORDER BY recorded_at DESC LIMIT ${max}
+ `);
+ return rows.map(row=>{
+  const payload=row.payload as Record<string,unknown>;
+  const strings=(key:string)=>Array.isArray(payload[key])?
+    (payload[key] as unknown[]).filter((v):v is string=>typeof v==="string"):[];
+  return {
+   projectId:Number(row.project_id),projectName:String(row.project_name),
+   title:String(payload.title??"Project handover"),summary:String(payload.summary??""),
+   next:String(payload.next??strings("blockers")[0]??strings("remaining")[0]??strings("notDone")[0]??"Review the project context"),
+   at:new Date(String(row.recorded_at)).toISOString(),
+   reconciled:Boolean(row.reconciled),revision:Number(row.revision),
+   reviewCount:Number(row.review_count)
+  };
+ });
+}
