@@ -66,7 +66,7 @@ describe("revision-aware hosted MCP",()=>{
    const response=await call("tools/call",{name:"lookout_submit_handover",arguments:report});
    expect(response.status).toBe(200);
    expect(submitReconciledHandover).toHaveBeenCalledWith(3,"agent","coding-agent:5",report);
-   expect(response.body.result.content[0].text)).toContain('"revision":3');
+   expect(response.body.result.content[0].text).toContain('"revision":3');
  });
  it("keeps unauthorised owner bearer tokens read-only",async()=>{
    const owner="b".repeat(64);
