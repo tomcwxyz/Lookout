@@ -31,6 +31,13 @@ describe("reconciled handovers", () => {
     expect(outcome.noLongerReportedBlockers).toEqual(["Unproven data repair"]);
     expect(outcome.previousWorkstreamEventId).toBe("old-agent-note");
   });
+  it("notices reports from older MCP clients during an active session", () => {
+    const p = parseSessionHandover({...report,basedOnLegacyCursor:"5:7"});
+    expect(reconcileSession(p,2,"not_checked",undefined,"5:7").status).toBe("incorporated");
+    const stale=reconcileSession(p,2,"not_checked",undefined,"5:8");
+    expect(stale.status).toBe("needs_review");
+    expect(stale.legacyChanged).toBe(true);
+  });
   it("rejects invalid revisions and untrusted links", () => {
     expect(() => parseSessionHandover({...report, basedOnRevision: -1})).toThrow();
     expect(() => parseSessionHandover({...report, prUrl: "https://evil.example/pr/9"})).toThrow();
