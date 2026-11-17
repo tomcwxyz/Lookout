@@ -22,7 +22,7 @@ export async function getSharedHandoverContext(portfolioId: number, observedProj
   safeProject(portfolioId);
   if (observedProjectId !== undefined) safeProject(observedProjectId);
   const db = getDatabase();
-  const [project, repositories, decisions, history, legacy, latest] = await Promise.all([
+  const [project, repositories, decisions, history, legacy, latest, legacyHeads] = await Promise.all([
     db.execute(sql`
       SELECT id,name,status,status_note,status_confirmed_at
       FROM portfolio_projects WHERE id=${portfolioId} LIMIT 1`),
@@ -57,7 +57,10 @@ export async function getSharedHandoverContext(portfolioId: number, observedProj
       ) reports ORDER BY recorded_at DESC LIMIT 30`),
     db.execute(sql`
       SELECT COALESCE(MAX(revision),0)::int AS revision
-      FROM lookout_handover_sessions WHERE portfolio_project_id=${portfolioId}`)
+      FROM lookout_handover_sessions WHERE portfolio_project_id=${portfolioId}`),
+    db.execute(sql`
+      SELECT (SELECT COALESCE(MAX(id),0) FROM agent_contributions WHERE portfolio_project_id=${portfolioId}) AS agent_id,
+        (SELECT COALESCE(MAX(id),0) FROM chatgpt_contributions WHERE portfolio_project_id=${portfolioId}) AS chatgpt_id`)
   ]);
   if (!project.length) return null;
   if (observedProjectId !== undefined && !repositories.some(r => Number(r.id) === observedProjectId))
@@ -86,6 +89,7 @@ export async function getSharedHandoverContext(portfolioId: number, observedProj
       statusSource: project[0].status ? "human_confirmed" : "unconfirmed"
     },
     revision: toNumber(latest[0]?.revision ?? 0),
+    legacyCursor: String(legacyHeads[0]?.agent_id ?? 0)+":"+String(legacyHeads[0]?.chatgpt_id ?? 0),
     current, needsReview: needsReview.slice(0, 12),
     repositories: repositories.map(row => {
       const s = row.snapshot as {
@@ -117,7 +121,7 @@ export async function getSharedHandoverContext(portfolioId: number, observedProj
       source:String(row.source),agent:String(row.actor),workstream:String(row.workstream),
       payload:row.payload,reconciliation:row.reconciliation,recordedAt:asDate(row.recorded_at)
     })),
-    guidance: "Read this state before work. Report with basedOnRevision. The current positions are attributed reports, not verified completion. Human-confirmed decisions are never overwritten."
+    guidance: "Read this state before work. Report with basedOnRevision and basedOnLegacyCursor. The current positions are attributed reports, not verified completion. Human-confirmed decisions are never overwritten."
   };
 }
 
@@ -149,6 +153,10 @@ export async function submitReconciledHandover(
       SELECT COALESCE(MAX(revision),0)::int revision FROM lookout_handover_sessions
       WHERE portfolio_project_id=${portfolioId}`);
     const revision = toNumber(previous[0]?.revision ?? 0);
+    const heads=await tx.execute(sql`
+      SELECT (SELECT COALESCE(MAX(id),0) FROM agent_contributions WHERE portfolio_project_id=${portfolioId}) agent_id,
+        (SELECT COALESCE(MAX(id),0) FROM chatgpt_contributions WHERE portfolio_project_id=${portfolioId}) chatgpt_id`);
+    const legacyCursor=String(heads[0]?.agent_id??0)+":"+String(heads[0]?.chatgpt_id??0);
     const linkedPr = report.prUrl ? await tx.execute(sql`
       SELECT p.id FROM portfolio_repository_links l JOIN projects p
         ON p.provider_id=l.repository_provider_id
@@ -184,7 +192,8 @@ export async function submitReconciledHandover(
     const oldBlockers=Array.isArray(before?.blockers)?
       before.blockers.filter((v:unknown):v is string=>typeof v==="string"):[];
     const reconciliation = reconcileSession(report,revision,evidence,
-      prior?{eventId:String(prior.event_id),blockers:oldBlockers}:undefined);
+      prior?{eventId:String(prior.event_id),blockers:oldBlockers}:undefined,
+      legacyCursor);
     const inserted = await tx.execute(sql`
       INSERT INTO lookout_handover_sessions
        (portfolio_project_id,event_id,source,actor,workstream,revision,based_on_revision,
