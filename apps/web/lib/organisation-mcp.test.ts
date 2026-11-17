@@ -9,7 +9,8 @@ vi.mock("@lookout/db",()=>({
  listTenantPortfolioProjects:vi.fn(async(org:number)=>[{id:1,name:"Allowed",status:"testing",org}]),
  authorisedPortfolioProject:vi.fn(async(org:number,id:number)=>org===4&&id===1?{id:1,name:"Allowed",status:"testing"}:null),
  listOrganisationMcpFindings:vi.fn(async(org:number)=>[{project:"Allowed",organisationId:org}]),
- listWorkspaceReports:vi.fn(async(org:number)=>[{projectName:"Allowed",organisationId:org}])
+ listWorkspaceReports:vi.fn(async(org:number)=>[{projectName:"Allowed",organisationId:org}]),
+ getSharedHandoverContext:vi.fn(async(id:number)=>({project:{portfolioId:id},revision:5}))
 }));
 import {authorisedPortfolioProject,listTenantPortfolioProjects,listOrganisationMcpFindings,listWorkspaceReports} from "@lookout/db";
 import {createOrganisationMcpServer} from "./organisation-mcp";
@@ -18,7 +19,7 @@ describe("organisation MCP tools",()=>{
  beforeEach(()=>{vi.clearAllMocks();handlers.clear();createOrganisationMcpServer(identity)});
  it("exposes a small read-only toolset with no contribution/write endpoints",()=>{
   expect([...handlers.keys()].sort()).toEqual([
-   "lookout_get_portfolio_project","lookout_list_agent_reports","lookout_list_attention",
+   "lookout_get_context","lookout_get_portfolio_project","lookout_list_agent_reports","lookout_list_attention",
    "lookout_list_projects","lookout_whoami"
   ]);
   expect([...handlers.keys()].join(" ")).not.toMatch(/submit|record|write|delete|revoke/);
@@ -35,6 +36,12 @@ describe("organisation MCP tools",()=>{
   const forbidden=await handlers.get("lookout_get_portfolio_project")!({portfolioId:55});
   expect(forbidden).toMatchObject({isError:true});
   expect(authorisedPortfolioProject).toHaveBeenCalledWith(4,55);
+ });
+ it("shares context only for projects granted to this organisation",async()=>{
+  const denied=await handlers.get("lookout_get_context")!({portfolioId:55});
+  expect(denied).toMatchObject({isError:true});
+  const allowed=await handlers.get("lookout_get_context")!({portfolioId:1});
+  expect(JSON.stringify(allowed)).toContain("revision");
  });
  it("does not leak internal IDs in whoami",async()=>{
   const result=await handlers.get("lookout_whoami")!({});
