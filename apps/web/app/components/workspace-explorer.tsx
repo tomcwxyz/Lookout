@@ -8,10 +8,11 @@ type Finding={id:number;projectId:number;project:string;kind:string;severity:str
 type Project={id:number;name:string;description:string;status:string|null;repositories:number};
 type Report={id:string;portfolioId:number;projectName:string;agent:string;kind:string;title:string;summary:string;nextStep:string;recordedAt:string;blockerCount:number;remainingCount:number};
 type Resource={id:number;name:string;provider:string;kind:string;url:string;observedAt:string};
+type Position={projectId:number;projectName:string;title:string;summary:string;next:string;at:string;reconciled:boolean;revision:number;reviewCount:number};
 type View="attention"|"changes"|"agents"|"projects";
 const labelDate=(v:string)=>Number.isNaN(Date.parse(v))?"Date unavailable":new Date(v).toLocaleString("en-GB",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
-export function WorkspaceExplorer({findings,projects,reports,resources}:{
- findings:Finding[];projects:Project[];reports:Report[];resources:Resource[];
+export function WorkspaceExplorer({findings,projects,reports,resources,positions=[]}:{
+ findings:Finding[];projects:Project[];reports:Report[];resources:Resource[];positions?:Position[];
 }){
  const [tab,setTab]=useState<View>("attention");
  const [selected,setSelected]=useState<number|null>(null);
@@ -21,6 +22,7 @@ export function WorkspaceExplorer({findings,projects,reports,resources}:{
  const priorities=useMemo(()=>composeWorkspacePriorities(findings,reports,undefined,8),[findings,reports]);
  const selectedPriorities=priorities.filter(item=>selected===null||item.projectId===selected);
  const filteredReports=reports.filter(item=>selected===null||item.portfolioId===selected);
+ const filteredPositions=positions.filter(item=>selected===null||item.projectId===selected);
  const agentFollowUps=filteredReports.filter(r=>r.blockerCount>0||r.remainingCount>0).sort((a,b)=>b.blockerCount-a.blockerCount||Date.parse(b.recordedAt)-Date.parse(a.recordedAt));
  const filteredProjects=projects.filter(item=>(selected===null||item.id===selected)&&item.name.toLowerCase().includes(search.trim().toLowerCase()));
  const recentChanges=useMemo(()=>[
@@ -44,6 +46,22 @@ export function WorkspaceExplorer({findings,projects,reports,resources}:{
     <h2>{tab==="attention"?"Needs your review":tab==="changes"?"What changed":tab==="agents"?"Agent handovers":"Your projects"}</h2></div>
     {tab==="projects"?<input aria-label="Search your projects" className="demo-search" placeholder="Search projects…" value={search} onChange={e=>setSearch(e.target.value)}/>:<span className="count-pill">{count} {count===1?"record":"records"}</span>}
    </div>
+   {tab==="attention"&&filteredPositions.length>0&&<section aria-label="Current project positions" className="lookout-priority-section">
+     <div className="lookout-priority-heading"><div><span className="eyebrow">PROJECT MEMORY · ONE POSITION PER PROJECT</span>
+      <h3>Where we left things</h3>
+      <p>Latest meaningful handovers, with unresolved differences highlighted. These are attributed accounts, not independent verification of completion.</p></div>
+      <span className="count-pill">{filteredPositions.length} projects</span></div>
+     <div className="lookout-priority-grid">
+      {filteredPositions.slice(0,8).map(item=><article className="lookout-priority-card" key={item.projectId}>
+       <div className="lookout-priority-meta"><span className="mini-clear">{item.reconciled?"Context reconciled · claims unverified":"Earlier handover · unverified"}</span>
+        <button type="button" className="back-link" onClick={()=>{setSelected(item.projectId);setTab("agents")}}>{item.projectName}</button></div>
+       <h4>{item.title}</h4><p>{item.summary}</p>
+       <p className="lookout-priority-next"><strong>Where to resume:</strong> {item.next}</p>
+       {item.reviewCount>0&&<p className="work-caution">{item.reviewCount} newer {item.reviewCount===1?"handover needs":"handovers need"} reconciliation before replacing this position.</p>}
+       <Link className="back-link" href={"/portfolio/"+item.projectId}>Project context →</Link>
+      </article>)}
+     </div>
+    </section>}
    {tab==="attention"&&selectedPriorities.length>0&&<section aria-label="Suggested priorities" className="lookout-priority-section">
      <div className="lookout-priority-heading"><div><span className="eyebrow">A SHORTLIST, NOT ANOTHER ALERT FEED</span>
       <h3>What may need attention first</h3><p>Grouped source findings and recent agent reports. Rank is a deterministic suggestion, not an AI decision or confirmation.</p></div>
@@ -60,7 +78,7 @@ export function WorkspaceExplorer({findings,projects,reports,resources}:{
       </article>)}
      </div>
     </section>}
-   {tab==="attention"&&agentFollowUps.length>0&&<div className="lookout-agent-signals" style={{borderBottom:"1px solid #e4eae6",background:"#f7faf8",padding:"15px 23px"}}>
+   {tab==="attention"&&filteredPositions.length===0&&agentFollowUps.length>0&&<div className="lookout-agent-signals" style={{borderBottom:"1px solid #e4eae6",background:"#f7faf8",padding:"15px 23px"}}>
     <span className="eyebrow">REPORTED BY AGENTS · NEEDS VERIFICATION</span>
     <p className="work-caution" style={{margin:"7px 0 12px"}}>These handovers flag reported blockers or unfinished work. They are suggestions to investigate, not confirmed faults or automatically accepted priorities.</p>
     {agentFollowUps.slice(0,5).map(report=><div className="intelligence-entry" key={report.id} style={{padding:"11px 0"}}>
