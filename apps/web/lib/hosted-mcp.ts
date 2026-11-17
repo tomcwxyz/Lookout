@@ -215,7 +215,8 @@ export function createHostedMcpServer(identity: LegacyHostedMcpIdentity) {
         if(!id)return failure("A logical portfolioId is required.");
         const {portfolioId:_ignore,...report}=candidate;
         const actor=identity.scope==="project"?"coding-agent:"+identity.tokenId:"ChatGPT";
-        return result(await submitReconciledHandover(id,identity.scope==="project"?"agent":"chatgpt",actor,report));
+        return result(await submitReconciledHandover(id,identity.scope==="project"?"agent":"chatgpt",actor,report,
+          identity.scope==="project"?identity.projectId:undefined));
       }catch(error){
         return failure(error instanceof HandoverEventConflictError?"Conflicting event ID":
           error instanceof Error?error.message:"Handover rejected");
