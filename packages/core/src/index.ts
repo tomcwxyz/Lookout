@@ -106,3 +106,6 @@ export type { CheckpointInput, CheckpointEntry } from "./checkpoint";
 
 export { parseContribution, contributionKinds } from "./contribution";
 export type { AgentContributionInput, ContributionKind } from "./contribution";
+
+export { parseSessionHandover, reconcileSession } from "./reconciled-handover";
+export type { SessionHandover, HandoverReconciliation } from "./reconciled-handover";
