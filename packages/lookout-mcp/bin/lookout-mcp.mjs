@@ -17,7 +17,7 @@ async function remote(path,body){
 }
 function result(value){return {content:[{type:"text",text:JSON.stringify(value)}]};}
 function createServer(){
- const server=new McpServer({name:"lookout",version:"0.3.0"});
+ const server=new McpServer({name:"lookout",version:"0.4.0"});
   /** Remote mode never requires a Neon database credential on the coding agent's machine. */
   {
     // Preferred workflow: fetch shared Lookout state, work, then submit against its revision.
