@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { agentIdentity,noStore } from "../../../../lib/agent-auth";
-import { getAgentHandover, getPortfolioContributionHandover } from "@lookout/db";
+import { getAgentHandover, getPortfolioContributionHandover, getSharedHandoverContext, getPortfolioIdForObservedProject } from "@lookout/db";
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
 export async function GET(request:NextRequest) {
@@ -11,7 +11,9 @@ export async function GET(request:NextRequest) {
       getAgentHandover(identity.projectId), getPortfolioContributionHandover(identity.projectId)
     ]);
     if(!handover) return NextResponse.json({error:"Project not found"},{status:404,headers:noStore});
-    return NextResponse.json({ ...handover, logicalProject: logical?.project ?? null,
+    const portfolioId=await getPortfolioIdForObservedProject(identity.projectId);
+    const sharedContext=portfolioId?await getSharedHandoverContext(portfolioId,identity.projectId):null;
+    return NextResponse.json({ ...handover, sharedContext, logicalProject: logical?.project ?? null,
       latestContributions: logical?.contributions ?? [],
       trustNote: "Agent contributions are self-reported; human decisions remain authoritative." },{headers:noStore});
   } catch(error) {
