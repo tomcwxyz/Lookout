@@ -20,6 +20,35 @@ function createServer(){
  const server=new McpServer({name:"lookout",version:"0.3.0"});
   /** Remote mode never requires a Neon database credential on the coding agent's machine. */
   {
+    // Preferred workflow: fetch shared Lookout state, work, then submit against its revision.
+    server.registerTool("lookout_get_context",{
+      description:"START HERE. Read one consolidated project position including ChatGPT and coding-agent notes, human decisions, current revision and source observations before working.",
+      inputSchema:z.object({})
+    },async()=>{try{return result(await remote("/api/agent/context"));}catch(err){
+      return {isError:true,content:[{type:"text",text:String(err)}]};}});
+    server.registerTool("lookout_get_reconciliation",{
+      description:"Read the result of a previous handover reconciliation. Reported closures and tests are not automatically verified.",
+      inputSchema:z.object({eventId:z.string().min(6).max(120)})
+    },async({eventId})=>{try{return result(await remote("/api/agent/reconciled-handover?eventId="+encodeURIComponent(eventId)));}catch(err){
+      return {isError:true,content:[{type:"text",text:String(err)}]};}});
+    server.registerTool("lookout_submit_handover",{
+      description:"Preferred handover: pass the revision read from lookout_get_context. Conflicting or context-free reports are retained for review, never silently promoted.",
+      inputSchema:z.object({
+        eventId:z.string().min(6).max(120),agent:z.string().min(1).max(80),
+        title:z.string().min(1).max(180),aim:z.string().min(1).max(1000),
+        summary:z.string().min(1).max(2500),workstream:z.string().min(1).max(120).optional(),
+        basedOnRevision:z.number().int().min(0).nullable().optional(),
+        next:z.string().min(1).max(300),
+        done:z.array(z.string().min(1).max(300)).max(12),
+        notDone:z.array(z.string().min(1).max(300)).max(12),
+        decisions:z.array(z.string().min(1).max(300)).max(10),
+        blockers:z.array(z.string().min(1).max(300)).max(10),
+        addresses:z.array(z.string().min(6).max(120)).max(10).optional(),
+        branch:z.string().max(200).optional(),commitSha:z.string().max(64).optional(),
+        prUrl:z.string().url().max(500).optional()
+      })
+    },async handover=>{try{return result(await remote("/api/agent/reconciled-handover",handover));}catch(err){
+      return {isError:true,content:[{type:"text",text:String(err)}]};}});
     server.registerTool("lookout_get_handover", {
       description:"Retrieve bounded, evidence-linked project state, agent-reported checkpoints and human decisions to resume development.",
       inputSchema:z.object({})
