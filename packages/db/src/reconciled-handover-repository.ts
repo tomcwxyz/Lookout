@@ -126,9 +126,10 @@ export async function getSharedHandoverContext(portfolioId: number, observedProj
 }
 
 export async function submitReconciledHandover(
-  portfolioId: number, source: Source, actor: string, raw: unknown
+  portfolioId: number, source: Source, actor: string, raw: unknown, observedProjectId?: number
 ) {
   safeProject(portfolioId);
+  if (source === "agent") safeProject(observedProjectId ?? 0);
   const report = parseSessionHandover(raw);
   if (!actor || actor.length > 160) throw new Error("Invalid agent identity");
   const payload = serialise(report);
@@ -141,6 +142,13 @@ export async function submitReconciledHandover(
     await tx.execute(sql`SELECT pg_advisory_xact_lock(72014,${portfolioId})`);
     const valid = await tx.execute(sql`SELECT id FROM portfolio_projects WHERE id=${portfolioId} LIMIT 1`);
     if (!valid.length) throw new Error("Project not found");
+    if(source==="agent"){
+      const link=await tx.execute(sql`
+        SELECT 1 FROM projects p JOIN portfolio_repository_links l
+          ON l.repository_provider_id=p.provider_id
+        WHERE p.id=${observedProjectId} AND l.portfolio_project_id=${portfolioId} LIMIT 1`);
+      if(!link.length) throw new Error("Project scope changed; refresh Lookout context");
+    }
     const existing = await tx.execute(sql`
       SELECT id,revision,payload_hash,reconciliation FROM lookout_handover_sessions
       WHERE portfolio_project_id=${portfolioId} AND event_id=${report.eventId} LIMIT 1`);
